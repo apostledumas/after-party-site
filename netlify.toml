@@ -1,0 +1,17 @@
+# Static site in public/, two functions under /api (functions live outside the publish folder so their source is never served).
+# Env vars to set in Netlify (Site settings > Environment variables):
+#   DATABASE_URL     Neon connection string (project "Afterparty")
+#   ADMIN_PASSCODE   the passcode for /admin
+#   SESSION_SECRET   optional; if unset the cookie key is derived from DATABASE_URL + ADMIN_PASSCODE
+#   ZOOM_LINK        the Zoom link guests receive
+#   MAIL_FROM        e.g. "The After Party <party@yourdomain.com>" (a domain verified in Resend)
+#   RESEND_API_KEY   added later; until then "Invite" marks people invited without emailing
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"

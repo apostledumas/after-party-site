@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin | The After Party</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;700;800&family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+  /* same tokens as the site (v2.css), trimmed for a working screen */
+  :root { --ink: #121110; --ink-2: #1d1b19; --ink-3: #292624; --paper: #f6f2ea; --red: #e5413d; --pink: #ff9fcf; --butter: #ffe27a; --muted: rgba(246,242,234,.7); --line: rgba(246,242,234,.12); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ink); color: var(--paper); font: 500 15px/1.5 "Inter Tight", system-ui, sans-serif; }
+  button, input, select { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+  h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.03em; }
+  .marker { font-family: "Permanent Marker", cursive; color: var(--pink); font-size: 15px; }
+  .btn { min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; cursor: pointer; font-weight: 800; }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-ghost { background: var(--ink-3); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  input[type=password], select { min-height: 44px; padding: 0 14px; border-radius: 14px; border: 2px solid var(--line); background: var(--ink-2); }
+
+  /* login */
+  .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+  .login form { width: min(100%, 380px); padding: 32px 26px; border-radius: 28px; background: var(--paper); color: var(--ink); display: grid; gap: 14px; transform: rotate(-1deg); }
+  .login input { background: #fff; color: var(--ink); border-color: rgba(18,17,16,.15); }
+  .msg { min-height: 1.4em; color: var(--red); font-weight: 700; }
+
+  /* board */
+  header { position: sticky; top: 0; z-index: 5; background: var(--ink); border-bottom: 1px solid var(--line); }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 14px 0; }
+  .bar .r { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .stats { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 10px; }
+  .stat { padding: 8px 14px; border-radius: 999px; background: var(--ink-2); font-weight: 700; }
+  .stat b { color: var(--butter); }
+  .note { margin: 0 0 14px; padding: 10px 14px; border-radius: 14px; background: rgba(255,226,122,.12); color: var(--butter); }
+  .actionbar { position: sticky; top: 73px; z-index: 4; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px; margin-bottom: 12px; border-radius: 18px; background: var(--ink-3); }
+  .actionbar .count { font-weight: 800; margin-right: auto; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
+  th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 0 10px; }
+  td { padding: 12px 10px; background: var(--ink-2); vertical-align: top; }
+  td:first-child { border-radius: 14px 0 0 14px; width: 44px; }
+  td:last-child { border-radius: 0 14px 14px 0; }
+  tr.sel td { background: #3a1d1c; }
+  input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--red); cursor: pointer; }
+  .name { font-weight: 800; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .prayer { max-width: 380px; white-space: pre-wrap; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+  .pill.requested { background: var(--ink-3); }
+  .pill.invited { background: var(--butter); color: var(--ink); }
+  .pill.declined { background: transparent; box-shadow: inset 0 0 0 1px var(--line); color: var(--muted); }
+  .empty { padding: 60px 0; text-align: center; color: var(--muted); }
+  @media (max-width: 760px) {
+    thead { display: none; }
+    tr { display: grid; grid-template-columns: 44px 1fr; margin-bottom: 8px; }
+    td { border-radius: 0 !important; }
+    td:first-child { grid-row: span 3; border-radius: 14px 0 0 14px !important; }
+    td:last-child { border-radius: 0 0 14px 0 !important; }
+    .actionbar { top: 0; position: sticky; }
+  }
+</style>
+</head>
+<body>
+
+<section class="login" id="login">
+  <form id="loginForm">
+    <span class="marker" style="color:var(--red)">The After Party</span>
+    <h1>Who's coming on?</h1>
+    <input type="password" id="pass" placeholder="Passcode" autocomplete="current-password" required>
+    <button class="btn btn-red" type="submit">Let me in</button>
+    <p class="msg" id="loginMsg" aria-live="polite"></p>
+  </form>
+</section>
+
+<section id="board" hidden>
+  <header><div class="wrap bar">
+    <h1>Sign-ups <span class="marker">pick who comes on</span></h1>
+    <div class="r">
+      <label class="sub" for="show">Show</label>
+      <select id="show"></select>
+      <select id="filter" aria-label="Status">
+        <option value="requested">Waiting</option>
+        <option value="invited">Invited</option>
+        <option value="declined">Passed</option>
+        <option value="all">Everyone</option>
+      </select>
+      <button class="btn btn-ghost" id="csv" type="button">CSV</button>
+      <button class="btn btn-ghost" id="refresh" type="button">Refresh</button>
+      <button class="btn btn-ghost" id="logout" type="button">Log out</button>
+    </div>
+  </div></header>
+
+  <div class="wrap">
+    <div class="stats" id="stats"></div>
+    <p class="note" id="emailNote" hidden>Email isn't connected yet. "Invite" will mark people invited, but no Zoom link goes out until Resend is set up.</p>
+    <div class="actionbar">
+      <label style="display:flex;gap:8px;align-items:center;font-weight:700"><input type="checkbox" id="all"> All</label>
+      <span class="count" id="selCount">0 selected</span>
+      <button class="btn btn-ghost" id="pass-btn" type="button" disabled>Pass</button>
+      <button class="btn btn-ghost" id="undo-btn" type="button" disabled>Back to waiting</button>
+      <button class="btn btn-red" id="invite-btn" type="button" disabled>Invite + send Zoom link</button>
+    </div>
+    <p class="msg" id="boardMsg" aria-live="polite" style="color:var(--butter)"></p>
+    <table>
+      <thead><tr><th></th><th>Person</th><th>Show</th><th>Status</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="empty" id="empty" hidden>No one here yet.</p>
+  </div>
+</section>
+
+<script>
+const API = "/api/admin";
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = (iso, o) => new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", ...o }).format(new Date(iso));
+const showLabel = (iso) => fmt(iso, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) + " CT";
+let data = { rows: [], shows: [] }, picked = new Set(), firstLoad = true;
+
+async function api(method, body, query = "") {
+  const res = await fetch(API + query, { method, credentials: "same-origin", headers: body ? { "content-type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined });
+  const out = await res.json().catch(() => ({}));
+  if (res.status === 401) { showLogin(); throw new Error(out.error || "Log in."); }
+  if (!res.ok) throw new Error(out.error || "Something went wrong.");
+  return out;
+}
+function showLogin() { $("#board").hidden = true; $("#login").hidden = false; $("#pass").focus(); }
+
+$("#loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault(); $("#loginMsg").textContent = "";
+  try { await api("POST", { action: "login", passcode: $("#pass").value }); $("#pass").value = ""; await load(); }
+  catch (x) { $("#loginMsg").textContent = x.message; }
+});
+$("#logout").addEventListener("click", async () => { await api("POST", { action: "logout" }).catch(() => {}); showLogin(); });
+
+async function load() {
+  const show = $("#show").value || "all";
+  data = await api("GET", null, "?show=" + encodeURIComponent(firstLoad ? "all" : show));
+  $("#login").hidden = true; $("#board").hidden = false;
+  if (firstLoad) {
+    // default to the next upcoming show (or the latest one)
+    const upcoming = [...data.shows].reverse().find((s) => new Date(s.show_at) > Date.now() - 3 * 36e5) || data.shows[0];
+    $("#show").innerHTML = `<option value="all">All shows</option>` + data.shows.map((s) => `<option value="${esc(new Date(s.show_at).toISOString())}">${esc(showLabel(s.show_at))} (${s.n})</option>`).join("");
+    if (upcoming) { $("#show").value = new Date(upcoming.show_at).toISOString(); firstLoad = false; return load(); }
+    firstLoad = false;
+  }
+  $("#emailNote").hidden = !!data.email;
+  picked.clear(); render();
+}
+function visible() { const f = $("#filter").value; return data.rows.filter((r) => f === "all" || r.status === f); }
+function render() {
+  const rows = visible();
+  const c = (st) => data.rows.filter((r) => r.status === st).length;
+  $("#stats").innerHTML = `<span class="stat"><b>${data.rows.length}</b> signed up</span><span class="stat"><b>${c("requested")}</b> waiting</span><span class="stat"><b>${c("invited")}</b> invited</span><span class="stat"><b>${data.rows.filter((r) => r.emailed_at).length}</b> emailed</span>`;
+  $("#rows").innerHTML = rows.map((r) => `<tr data-id="${r.id}" class="${picked.has(r.id) ? "sel" : ""}">
+    <td><input type="checkbox" aria-label="Select ${esc(r.name)}" ${picked.has(r.id) ? "checked" : ""}></td>
+    <td><div class="name">${esc(r.name)}</div><div class="sub">${esc(r.email)} &middot; ${esc(r.phone)}</div><div class="sub">Signed up ${esc(fmt(r.created_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))}</div></td>
+    <td class="sub">${esc(showLabel(r.show_at))}</td>
+    <td><span class="pill ${r.status}">${r.status === "requested" ? "Waiting" : r.status === "invited" ? (r.emailed_at ? "Invited, emailed" : "Invited") : "Passed"}</span></td>
+  </tr>`).join("");
+  $("#empty").hidden = rows.length > 0;
+  sync();
+}
+function sync() {
+  const n = picked.size, rows = visible();
+  $("#selCount").textContent = `${n} selected`;
+  ["#invite-btn", "#pass-btn", "#undo-btn"].forEach((s) => ($(s).disabled = n === 0));
+  $("#all").checked = rows.length > 0 && rows.every((r) => picked.has(r.id));
+}
+$("#rows").addEventListener("change", (e) => {
+  const tr = e.target.closest("tr"); if (!tr) return;
+  const id = Number(tr.dataset.id);
+  e.target.checked ? picked.add(id) : picked.delete(id);
+  tr.classList.toggle("sel", e.target.checked); sync();
+});
+$("#all").addEventListener("change", (e) => { visible().forEach((r) => (e.target.checked ? picked.add(r.id) : picked.delete(r.id))); render(); });
+$("#show").addEventListener("change", () => load().catch((x) => ($("#boardMsg").textContent = x.message)));
+$("#filter").addEventListener("change", () => { picked.clear(); render(); });
+$("#refresh").addEventListener("click", () => load().catch((x) => ($("#boardMsg").textContent = x.message)));
+
+async function act(body, confirmText) {
+  if (confirmText && !confirm(confirmText)) return;
+  $("#boardMsg").textContent = "Working...";
+  try {
+    const out = await api("POST", { ...body, ids: [...picked] });
+    $("#boardMsg").textContent = out.invited != null
+      ? `${out.invited} invited. ${out.emailed} emailed.${out.failed ? ` ${out.failed} emails failed, try again.` : ""}${out.note ? " " + out.note : ""}`
+      : `${out.updated} updated.`;
+    await load();
+  } catch (x) { $("#boardMsg").textContent = x.message; }
+}
+$("#invite-btn").addEventListener("click", () => act({ action: "invite" }, `Invite ${picked.size} ${picked.size === 1 ? "person" : "people"} and email them the Zoom link?`));
+$("#pass-btn").addEventListener("click", () => act({ action: "status", status: "declined" }));
+$("#undo-btn").addEventListener("click", () => act({ action: "status", status: "requested" }));
+
+$("#csv").addEventListener("click", () => {
+  const rows = visible(), head = ["name", "email", "phone", "show", "status", "signed_up"];
+  const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = [head.join(",")].concat(rows.map((r) => [r.name, r.email, r.phone, showLabel(r.show_at), r.status, r.created_at].map(q).join(","))).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "after-party-signups.csv"; a.click();
+});
+
+// already logged in? (cookie still valid)
+load().catch(() => showLogin());
+</script>
+</body>
+</html>

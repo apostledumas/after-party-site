@@ -1,0 +1,398 @@
+/* THE AFTER PARTY / v2
+   World: a sticker-and-card collage on a phone screen. Dark mode, loud color blocks, tilted cards,
+   torn paper stickers with marker writing, hand-drawn doodles, grayscale cut-outs on color.
+   Palette: Sherman red + pink + butter yellow on near-black (Sherman's pick, Oct 28). */
+
+:root {
+  --ink: #121110;          /* ground: warm near-black, not navy (v1's navy read "TV studio") */
+  --ink-2: #1d1b19;        /* raised dark card */
+  --paper: #f6f2ea;        /* off-white: light cards, body text on dark */
+  --red: #e5413d;          /* Sherman red: the primary action, always */
+  --red-hi: #ff5a4e;
+  --pink: #ff9fcf;
+  --butter: #ffe27a;
+  --muted: rgba(246, 242, 234, 0.7);   /* 4.5:1 floor on --ink */
+  --line: rgba(246, 242, 234, 0.14);
+
+  --sans: "Inter Tight", system-ui, sans-serif;
+  --script: "Caveat Brush", "Caveat", cursive;
+  --marker: "Permanent Marker", "Marker Felt", cursive;
+  --num: "Anton", "Inter Tight", sans-serif;
+
+  /* TEMPO: brisk with a bounce. One curve; the overshoot is the fun. */
+  --ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t: 0.35s;
+  --r: 28px;               /* card radius, from the reference's rounded cards */
+  --gutter: 16px;
+  --max: 1180px;
+}
+@media (min-width: 720px) { :root { --gutter: 28px; } }
+@media (min-width: 1100px) { :root { --gutter: 40px; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; overflow-x: clip; }
+body { margin: 0; background: var(--ink); color: var(--paper); font-family: var(--sans); font-size: 16px; line-height: 1.55; -webkit-font-smoothing: antialiased; overflow-x: clip; }
+img { display: block; max-width: 100%; height: auto; } /* height:auto: the width/height attributes stretched every cut-out to 900px tall */
+a { color: inherit; }
+::selection { background: var(--pink); color: var(--ink); }
+:focus-visible { outline: 3px solid var(--butter); outline-offset: 3px; }
+.wrap { width: 100%; max-width: var(--max); margin: 0 auto; padding-left: var(--gutter); padding-right: var(--gutter); }
+
+/* ---------- type ---------- */
+.h { margin: 0; font-weight: 800; letter-spacing: -0.035em; line-height: 0.95; }
+.h-xl { font-size: clamp(44px, 11vw, 104px); }
+.h-lg { font-size: clamp(36px, 7.4vw, 72px); }
+.script { font-family: var(--script); font-weight: 400; letter-spacing: 0; color: var(--pink); display: inline-block; transform: rotate(-4deg); }
+.lede { font-size: clamp(17px, 2vw, 20px); color: var(--muted); max-width: 36ch; margin: 0; }
+.cap { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+
+/* ---------- buttons: pills with a circle icon, like the reference's chips ---------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 22px 6px 6px;
+  border-radius: 999px; border: 0; cursor: pointer; text-decoration: none;
+  font-weight: 800; font-size: 16px; letter-spacing: -0.01em;
+  transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
+}
+.btn i { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex: none; transition: transform var(--t) var(--ease); }
+.btn i svg { width: 20px; height: 20px; }
+.btn:hover { transform: translateY(-3px) rotate(-1deg); }
+.btn:hover i { transform: rotate(-12deg) scale(1.06); }
+.btn-red { background: var(--red); color: #fff; box-shadow: 0 14px 30px -14px rgba(229, 65, 61, 0.9); }
+.btn-red i { background: var(--ink); color: #fff; }
+.btn-paper { background: var(--paper); color: var(--ink); }
+.btn-paper i { background: var(--red); color: #fff; }
+.btns { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* ---------- top bar ---------- */
+.top { position: sticky; top: 0; z-index: 40; background: linear-gradient(var(--ink) 70%, transparent); }
+.top-in { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 68px; }
+.logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; letter-spacing: -0.03em; font-size: 18px; line-height: 1; }
+.logo b { width: 38px; height: 38px; border-radius: 50%; background: var(--red); display: grid; place-items: center; font-size: 15px; color: #fff; transform: rotate(-8deg); }
+.round { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); color: var(--ink); text-decoration: none; position: relative; transition: transform var(--t) var(--ease); }
+.round:hover { transform: rotate(-12deg) scale(1.06); }
+.round svg { width: 20px; height: 20px; }
+.round .dot { position: absolute; top: 2px; right: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--pink); border: 2px solid var(--ink); }
+.top .btn { min-height: 46px; padding: 4px 16px 4px 4px; font-size: 14px; white-space: nowrap; }
+.top .btn i { width: 38px; height: 38px; }
+.top-r { display: flex; gap: 8px; align-items: center; }
+
+/* ---------- stickers: real torn wheat-paste paper (Fal scrap, cropped to its ink) ----------
+   The scrap's alpha is the sticker's shape (mask); its wrinkles multiply over the color.
+   v2.0 used a clip-path jag. Sherman: "the cutout isn't actually the tape texture, the paper texture". */
+.sticker {
+  position: relative; display: inline-block; padding: 14px 22px 16px; font-family: var(--marker); line-height: 1.02;
+  text-transform: uppercase; color: var(--ink); isolation: isolate;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.35));
+}
+.sticker::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: url(assets/v2/scrap-a.png) center / 100% 100% no-repeat, var(--st, var(--pink));
+  background-blend-mode: multiply;
+  -webkit-mask: url(assets/v2/scrap-a.png) center / 100% 100% no-repeat;
+  mask: url(assets/v2/scrap-a.png) center / 100% 100% no-repeat;
+}
+.sticker.alt::before { background-image: url(assets/v2/scrap-b.png); -webkit-mask-image: url(assets/v2/scrap-b.png); mask-image: url(assets/v2/scrap-b.png); }
+.sticker.butter { --st: var(--butter); }
+.sticker.paper { --st: var(--paper); }
+.sticker.red { --st: var(--red); color: #fff; }
+/* masking tape: the Fal strip, cropped to ink (600x112), laid across a corner */
+.tape { position: absolute; width: 120px; height: auto; pointer-events: none; z-index: 3; opacity: 0.92; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25)); }
+
+/* ---------- textures: so the dark never reads flat (Sherman: "5 or 10% opacity") ---------- */
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: url(assets/v2/paper.jpg) 0 0 / 640px; opacity: 0.06; }
+/* hand-drawn swirls for card grounds: washed out, ink-colored, fixed px size so the stroke weight never scales */
+:root { --squiggles: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='200' viewBox='0 0 280 200' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 40c18-28 36 28 54 0s36 28 54 0 36 28 54 0'/%3E%3Cpath d='M34 128c10-22 34-20 32 2s-24 22-30 8 8-30 28-24 22 26 8 38'/%3E%3Cpath d='M150 110l10 28M172 102l-4 36M190 112l12 22'/%3E%3Cpath d='M206 170c14-12 28 12 42 0s28 12 40 0'/%3E%3Ccircle cx='118' cy='168' r='8'/%3E%3Cpath d='M234 34l10 10m0-10l-10 10'/%3E%3Cpath d='M222 78c8 0 8 12 0 12s-8 12 0 12 8 12 0 12'/%3E%3C/svg%3E"); }
+.tex { position: relative; isolation: isolate; }
+.tex::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: url(assets/v2/paper.jpg) center / 520px; mix-blend-mode: multiply; opacity: 0.55; pointer-events: none; }
+.tex::after { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--squiggles) var(--sq-pos, 0 0) / 280px 200px; opacity: 0.1; pointer-events: none; }
+
+/* ---------- doodles: hand-drawn strokes, never filled ---------- */
+.doodle { position: absolute; pointer-events: none; fill: none; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- relaunch strip ---------- */
+.strip { margin: 6px 0 22px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.strip .sticker { transform: rotate(-2deg); font-size: 15px; }
+.count { display: inline-flex; align-items: baseline; gap: 6px; font-family: var(--num); font-size: 28px; letter-spacing: 0.02em; color: var(--butter); }
+.count small { font-family: var(--sans); font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 0.1em; margin-right: 6px; }
+.local { font-size: 13px; color: var(--muted); }
+
+/* ---------- hero ---------- */
+.hero { position: relative; padding: 12px 0 64px; }
+.hero-grid { display: grid; gap: 34px; align-items: center; }
+.hero h1 { margin-bottom: 18px; }
+.hero .lede { margin-bottom: 26px; }
+.host-card { position: relative; justify-self: center; width: min(100%, 460px); aspect-ratio: 1 / 1.02; margin-top: 30px; }
+.host-card .card-bg { position: absolute; inset: 14% 4% 0 4%; border-radius: var(--r); background: var(--red); transform: rotate(3deg); }
+.host-card .card-bg::after { /* a butter card peeking behind: the stacked-cards move from the reference */
+  content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--butter); transform: rotate(-7deg) translate(-4%, 3%); z-index: -1; }
+.host-card .bw { position: absolute; left: 50%; bottom: 0; width: 100%; transform: translateX(-50%); filter: grayscale(1) contrast(1.12) brightness(1.04) drop-shadow(0 16px 22px rgba(0, 0, 0, 0.35)); border-radius: 0 0 var(--r) var(--r); }
+.host-card .hosted { position: absolute; left: -2%; bottom: 10%; transform: rotate(-6deg); font-size: clamp(16px, 2.6vw, 22px); }
+.host-card .live { position: absolute; right: 2%; top: 16%; width: 78px; height: 78px; border-radius: 50%; background: var(--paper); color: var(--ink); display: grid; place-items: center; text-align: center; font-weight: 800; font-size: 12px; line-height: 1.05; transform: rotate(12deg); box-shadow: 0 10px 20px -8px rgba(0, 0, 0, 0.5); }
+.host-card .live b { display: block; font-family: var(--num); font-weight: 400; font-size: 22px; color: var(--red); }
+.hero-popper { position: absolute; width: clamp(120px, 22vw, 210px); pointer-events: none; z-index: 3; }
+.hero-popper img { width: 100%; filter: drop-shadow(0 14px 16px rgba(0, 0, 0, 0.45)); }
+.hero-popper .fired { position: absolute; inset: 0; opacity: 0; }
+.is-fired .fired { opacity: 1; }
+.is-fired .closed { opacity: 0; }
+@media (min-width: 900px) {
+  .hero { padding: 24px 0 90px; }
+  .hero-grid { grid-template-columns: 1.1fr 0.9fr; gap: 40px; }
+  .host-card { margin-top: 0; }
+}
+
+/* ---------- the menu: four tilted cards ---------- */
+.menu { padding: 40px 0 100px; }
+.menu h2 { margin-bottom: 30px; }
+.cards { display: grid; gap: 16px; }
+.card {
+  position: relative; display: flex; align-items: center; gap: 16px; min-height: 124px; padding: 22px 128px 22px 20px;
+  border-radius: var(--r); text-decoration: none; color: var(--ink); overflow: visible;
+  transform: rotate(var(--tilt, 0deg)); transition: transform var(--t) var(--ease);
+}
+.card:hover { transform: rotate(0deg) translateY(-4px) scale(1.015); }
+.card .ico { width: 54px; height: 54px; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; flex: none; }
+.card .ico svg { width: 22px; height: 22px; }
+.card h3 { margin: 0 0 2px; font-size: clamp(22px, 3vw, 28px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; }
+.card p { margin: 0; font-size: 15px; font-weight: 500; opacity: 0.78; line-height: 1.35; }
+.card .obj { position: absolute; right: -6px; top: 50%; width: 150px; transform: translateY(-50%) rotate(var(--obj-tilt, 0deg)); filter: drop-shadow(0 14px 14px rgba(0, 0, 0, 0.35)); transition: transform var(--t) var(--ease); pointer-events: none; }
+.card:hover .obj { transform: translateY(-58%) rotate(calc(var(--obj-tilt, 0deg) - 6deg)) scale(1.06); }
+.card .script-note { position: absolute; right: 22px; bottom: 10px; font-family: var(--script); font-size: 20px; transform: rotate(-6deg); }
+.c-word { background: var(--red); color: #fff; --tilt: -1.6deg; }
+.c-word .ico { background: #fff; color: var(--red); }
+.c-sub { background: var(--paper); --tilt: 1.2deg; }
+.c-thu { background: var(--butter); --tilt: -0.8deg; }
+.c-watch { background: var(--pink); --tilt: 1.6deg; }
+.c-word .obj { width: 170px; right: -14px; --obj-tilt: -8deg; }
+.c-word .obj .fired { position: absolute; inset: 0; opacity: 0; }
+.c-word.is-fired .obj .fired { opacity: 1; }
+.c-word.is-fired .obj .closed { opacity: 0; }
+.c-sub .obj { width: 120px; right: 6px; --obj-tilt: 10deg; }
+.c-thu .obj { width: 140px; right: -18px; --obj-tilt: -6deg; }
+.c-watch .obj { width: 120px; right: 4px; --obj-tilt: 12deg; }
+.card-sticker { position: absolute; z-index: 2; right: 14%; bottom: -26px; transform: rotate(-5deg); font-size: 17px; }
+@media (min-width: 900px) {
+  .cards { grid-template-columns: 1fr 1fr; gap: 26px 24px; }
+  .card { min-height: 170px; padding-right: 170px; }
+  .card .obj { width: 240px; }
+  .c-word .obj, .c-thu .obj { width: 280px; right: -40px; }
+}
+
+#confetti { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 60; pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+  .card { transform: none; }
+}
+
+/* ======================= v2 full page ======================= */
+.sec { padding: 90px 0; position: relative; }
+.kicker { display: inline-block; margin-bottom: 16px; }
+.sec h2 { margin-bottom: 18px; }
+.sec .lede + .btns { margin-top: 26px; }
+
+/* ---------- Oct 31: a wheat-pasted poster, taped to the wall ---------- */
+.poster-wrap { position: relative; display: grid; gap: 40px; align-items: center; }
+.poster {
+  position: relative; padding: 46px 28px 38px; border-radius: 6px; color: var(--ink);
+  background: var(--butter); transform: rotate(-1.5deg); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.9);
+}
+.poster .tape.t1 { left: -26px; top: -14px; transform: rotate(-32deg); }
+.poster .tape.t2 { right: -26px; top: -10px; transform: rotate(28deg); }
+.poster .tape.t3 { right: 18%; bottom: -18px; transform: rotate(-6deg); width: 100px; }
+.poster .date { font-family: var(--num); font-size: clamp(22px, 3.4vw, 30px); letter-spacing: 0.02em; line-height: 1; }
+.poster h2 { font-size: clamp(42px, 8vw, 84px); margin: 12px 0 8px; }
+.poster .script { color: var(--red); font-size: 1.05em; }
+.poster p { margin: 0 0 14px; font-weight: 500; font-size: 17px; max-width: 46ch; }
+.poster .guests { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 22px; padding: 0; list-style: none; }
+.poster .guests li { padding: 6px 12px; border-radius: 999px; background: var(--ink); color: var(--paper); font-weight: 700; font-size: 14px; }
+.poster .guests li.pending { background: transparent; box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); }
+.poster .btn-paper { background: var(--ink); color: var(--paper); }
+.poster-popper { position: absolute; right: -4%; top: -16%; width: clamp(110px, 18vw, 170px); transform: rotate(18deg); z-index: 4; pointer-events: none; }
+.poster-popper .fired { position: absolute; inset: 0; opacity: 0; }
+.invite { display: grid; gap: 16px; }
+.invite .sticker { transform: rotate(3deg); font-size: clamp(22px, 3vw, 30px); justify-self: start; }
+.invite p { margin: 0; color: var(--muted); max-width: 40ch; }
+.copied { font-size: 13px; color: var(--butter); min-height: 1.2em; }
+@media (min-width: 900px) { .poster-wrap { grid-template-columns: 1.35fr 0.65fr; gap: 60px; } .poster { padding: 60px 52px 48px; } }
+
+/* ---------- Start here: the one light section (the reference's middle screen) ---------- */
+.light { background: var(--paper); color: var(--ink); isolation: isolate; border-radius: 40px 40px 0 0; }
+.light + .light-end { background: var(--paper); }
+.light::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: url(assets/v2/paper.jpg) 0 0 / 640px; mix-blend-mode: multiply; opacity: 0.6; }
+.light .lede { color: rgba(18, 17, 16, 0.72); }
+.light .script { color: var(--red); }
+.notes { display: grid; gap: 22px; margin-top: 40px; }
+.note { position: relative; padding: 30px 24px 26px; border-radius: 22px; background: #fff; box-shadow: 0 18px 40px -24px rgba(18, 17, 16, 0.45); transform: rotate(var(--tilt, 0deg)); }
+.note:nth-child(1) { --tilt: -1deg; --sq-pos: 40px 10px; }
+.note:nth-child(2) { --tilt: 0.8deg; background: var(--pink); --sq-pos: 120px 60px; }
+.note:nth-child(3) { --tilt: -0.6deg; background: var(--butter); --sq-pos: 10px 90px; }
+.note:nth-child(4) { --tilt: 1.1deg; background: var(--ink); color: var(--paper); }
+.note:nth-child(4)::before { mix-blend-mode: screen; opacity: 0.08; }
+.note:nth-child(4)::after { filter: invert(1); opacity: 0.08; }
+.note .tape { top: -16px; left: 50%; width: 110px; transform: translateX(-50%) rotate(-3deg); }
+.note h3 { margin: 0 0 10px; font-size: 24px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; }
+.note p { margin: 0; font-size: 16px; line-height: 1.6; }
+@media (min-width: 900px) { .notes { grid-template-columns: 1fr 1fr; gap: 30px 28px; } .note { padding: 36px 34px 32px; } }
+
+/* the verse: three words, three pops */
+.verse { position: relative; margin: 70px 0 0; padding: 40px 26px 34px; border-radius: 28px; background: var(--ink); color: var(--paper); }
+.verse blockquote { margin: 0; font-size: clamp(26px, 4.4vw, 46px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.12; }
+.verse cite { display: block; margin-top: 18px; font-style: normal; font-family: var(--script); font-size: 26px; color: var(--pink); transform: rotate(-2deg); }
+.verse .w { position: relative; display: inline-block; white-space: nowrap; }
+.verse .w::after { content: ""; position: absolute; left: -3%; right: -3%; top: 0.06em; bottom: 0.02em; /* full height: a half bar left dark ink on the dark card */ z-index: -1; background: var(--hl); border-radius: 4px; transform: scaleX(0); transform-origin: left; transition: transform 0.5s var(--ease); }
+.verse .w { isolation: isolate; color: var(--paper); }
+.verse .w.on::after { transform: scaleX(1); }
+.verse .w.on { color: var(--ink); }
+.verse .w:nth-of-type(1) { --hl: var(--red); }
+.verse .w:nth-of-type(2) { --hl: var(--pink); }
+.verse .w:nth-of-type(3) { --hl: var(--butter); }
+.verse .w.on:nth-of-type(1) { color: #fff; }
+.verse .mini { position: absolute; width: 74px; pointer-events: none; }
+.verse .mini .fired { position: absolute; inset: 0; opacity: 0; }
+.verse .mini.m1 { right: 10px; top: -38px; transform: rotate(10deg); }
+.verse .tape { top: -14px; left: 30px; transform: rotate(-8deg); }
+@media (min-width: 900px) { .verse { padding: 56px 60px 48px; } .verse .mini.m1 { width: 110px; right: 30px; top: -60px; } }
+
+/* ---------- how it works: tilted step cards ---------- */
+.steps { display: grid; gap: 18px; margin-top: 36px; counter-reset: s; }
+.step { position: relative; padding: 26px 22px 24px; border-radius: var(--r); color: var(--ink); transform: rotate(var(--tilt, 0deg)); transition: transform var(--t) var(--ease); }
+.step:hover { transform: rotate(0deg) translateY(-4px); }
+.step .n { font-family: var(--num); font-size: 54px; line-height: 0.9; display: block; margin-bottom: 10px; }
+.step h3 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.03em; }
+.step p { margin: 0; font-size: 15px; font-weight: 500; opacity: 0.8; }
+.step:nth-child(1) { background: var(--red); color: #fff; --tilt: -1.4deg; --sq-pos: 60px 0; }
+.step:nth-child(2) { background: var(--paper); --tilt: 1deg; --sq-pos: 0 70px; }
+.step:nth-child(3) { background: var(--butter); --tilt: -0.8deg; --sq-pos: 140px 40px; }
+.step:nth-child(4) { background: var(--pink); --tilt: 1.3deg; --sq-pos: 30px 120px; }
+.howto-note { margin-top: 30px; color: var(--muted); }
+@media (min-width: 900px) { .steps { grid-template-columns: repeat(4, 1fr); gap: 20px; } }
+
+/* ---------- watch ---------- */
+.watch-grid { display: grid; gap: 34px; align-items: center; }
+.player { position: relative; aspect-ratio: 16 / 9; border-radius: var(--r); overflow: hidden; background: var(--red); transform: rotate(-1deg); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.9); }
+.player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.player-face { position: absolute; inset: 0; display: grid; place-items: center; text-decoration: none; color: #fff; }
+.player-face .phone { position: absolute; right: 4%; bottom: -12%; width: 46%; transform: rotate(14deg); filter: drop-shadow(0 14px 16px rgba(0, 0, 0, 0.4)); }
+.player-face .play { position: relative; z-index: 2; width: 86px; height: 86px; border-radius: 50%; background: var(--ink); display: grid; place-items: center; transition: transform var(--t) var(--ease); }
+.player-face:hover .play { transform: scale(1.1) rotate(-8deg); }
+.player-face .play svg { width: 30px; height: 30px; margin-left: 4px; }
+.player-face .sticker { position: absolute; left: 6%; top: 10%; transform: rotate(-6deg); font-size: 18px; }
+.upnext { margin: 26px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.upnext li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 18px; background: var(--ink-2); }
+.upnext b { font-weight: 800; }
+.upnext span { font-size: 14px; color: var(--muted); }
+.upnext .pill { padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; background: var(--butter); color: var(--ink); white-space: nowrap; }
+@media (min-width: 900px) { .watch-grid { grid-template-columns: 0.9fr 1.1fr; gap: 60px; } }
+
+/* ---------- live / countdown chip ---------- */
+.live-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: var(--red); color: #fff; font-weight: 800; font-size: 14px; text-decoration: none; }
+.live-chip::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #fff; animation: blink 1.2s steps(2, start) infinite; }
+@keyframes blink { to { visibility: hidden; } }
+
+/* ---------- sign-up ---------- */
+.signup-grid { display: grid; gap: 40px; align-items: start; }
+.form-card { position: relative; padding: 38px 22px 28px; border-radius: var(--r); background: var(--paper); color: var(--ink); --sq-pos: 90px 30px; }
+.form-card .tape.t1 { left: 24px; top: -16px; transform: rotate(-6deg); }
+.form-card .tape.t2 { right: 24px; top: -14px; transform: rotate(5deg); width: 96px; }
+.field { display: grid; gap: 6px; margin-bottom: 14px; }
+.field label { font-size: 13px; font-weight: 800; letter-spacing: 0.02em; }
+.field label em { font-style: normal; font-weight: 500; opacity: 0.6; }
+.field input, .field textarea { width: 100%; min-height: 54px; padding: 14px 16px; font: inherit; font-size: 16px; color: var(--ink); background: #fff; border: 2px solid rgba(18, 17, 16, 0.12); border-radius: 16px; transition: border-color var(--t) var(--ease); }
+.field textarea { min-height: 100px; resize: vertical; }
+.field input:focus, .field textarea:focus { outline: none; border-color: var(--red); }
+.row2 { display: grid; gap: 0 12px; }
+@media (min-width: 720px) { .row2 { grid-template-columns: 1fr 1fr; } }
+.form-card .btn { width: 100%; justify-content: center; margin-top: 4px; }
+.fine { margin: 12px 0 0; font-size: 13px; opacity: 0.7; }
+.err { color: var(--red); font-weight: 700; opacity: 1; }
+.hp { position: absolute; left: -9999px; }
+.done { display: none; text-align: left; }
+.is-done form { display: none; }
+.is-done .done { display: block; }
+.done h3 { margin: 6px 0 10px; font-size: 34px; font-weight: 800; letter-spacing: -0.03em; }
+.signup-aside .sticker { transform: rotate(-3deg); font-size: 20px; margin-top: 22px; }
+@media (min-width: 900px) { .signup-grid { grid-template-columns: 0.9fr 1.1fr; gap: 64px; } .form-card { padding: 48px 40px 36px; } }
+
+/* ---------- footer: a sticker wall ---------- */
+.foot { padding: 70px 0 calc(40px + env(safe-area-inset-bottom)); text-align: center; }
+.foot .wall { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px 18px; margin-bottom: 36px; }
+.foot .wall .sticker { font-size: clamp(20px, 3.6vw, 34px); }
+.foot .wall .sticker:nth-child(1) { transform: rotate(-4deg); }
+.foot .wall .sticker:nth-child(2) { transform: rotate(3deg); }
+.foot .wall .sticker:nth-child(3) { transform: rotate(-2deg); }
+.foot nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 22px; font-weight: 700; font-size: 14px; }
+.foot nav a { text-decoration: none; color: var(--muted); }
+.foot nav a:hover { color: var(--paper); }
+.foot small { display: block; margin-top: 22px; color: var(--muted); }
+
+[data-phase="weekly"] .only-special { display: none !important; }
+[data-phase="special"] .only-weekly { display: none !important; }
+.mini .fired { position: absolute; inset: 0; opacity: 0; }
+[hidden] { display: none !important; } /* .live-chip and .count set display and beat the hidden attribute */
+
+/* ======================= v2.1 (Oct 28): desktop fills, the Holy Ghost, the deck ======================= */
+/* Sherman: "on the desktop version, it still just feels like a bunch of open space". Wider frame, bigger poster. */
+:root { --max: 1320px; }
+@media (min-width: 1100px) { :root { --gutter: 48px; } }
+
+/* the poster now takes the whole width and carries its own ghost */
+.poster-grid { display: grid; gap: 28px; align-items: center; }
+.poster .big-p { font-size: clamp(19px, 2.2vw, 24px); font-weight: 800; letter-spacing: -0.02em; }
+.ghost { position: relative; margin: 0; justify-self: center; width: min(86%, 440px); padding-bottom: 80px; }
+.ghost img { width: 100%; transform: rotate(-7deg); filter: drop-shadow(0 22px 22px rgba(18, 17, 16, 0.35)); animation: haunt 3.4s ease-in-out infinite; }
+@keyframes haunt { 50% { transform: rotate(-4deg) translateY(-12px); } }   /* the one idle float on the page: a ghost should hover */
+.ghost-arrow { width: 110px; right: -6%; bottom: 34px; stroke: var(--ink); }
+.ghost figcaption { position: absolute; left: -6%; bottom: 0; font-family: var(--script); font-size: clamp(24px, 2.6vw, 32px); line-height: 1.02; color: var(--ink); transform: rotate(-5deg); }
+.ghost figcaption b { color: var(--red); font-weight: 400; }
+.invite { margin-top: 44px; }
+@media (min-width: 900px) {
+  .poster { padding: 72px 64px 60px; transform: rotate(-1deg); }
+  .poster h2 { font-size: clamp(64px, 7.4vw, 124px); }
+  .poster p { font-size: 18px; max-width: 54ch; }
+  .poster-grid { grid-template-columns: 1.45fr 0.75fr; gap: 40px; }
+  .poster-popper { width: 200px; right: -2%; top: -12%; }
+  .invite { grid-template-columns: auto 1fr auto; align-items: center; gap: 28px; }
+  .invite p { max-width: none; }
+  .invite .copied { grid-column: 1 / -1; }
+}
+
+/* the menu cards get more presence on wide screens */
+@media (min-width: 1100px) {
+  .card { min-height: 210px; padding: 30px 230px 30px 30px; }
+  .card h3 { font-size: 34px; }
+  .card p { font-size: 17px; }
+  .card .obj { width: 270px; }
+  .c-word .obj, .c-thu .obj { width: 320px; }
+  .h-xl { font-size: clamp(64px, 8.4vw, 128px); }
+  .host-card { width: min(100%, 540px); }
+}
+
+/* ---------- How to get on: a deck of cards ----------
+   Each step is sticky; the next one slides up over it, and the covered card tips back and dims.
+   The tip is a pure function of scroll (v2.js updateStack), no chase. Squarer than the menu cards (Sherman). */
+.how-grid { display: grid; gap: 30px; }
+.stack { position: relative; }
+.step {
+  position: sticky; top: calc(92px + var(--i) * 16px);
+  min-height: min(56svh, 470px); margin: 0 0 22svh; padding: 30px 26px; border-radius: 30px;
+  display: flex; flex-direction: column; justify-content: flex-start; overflow: visible;
+  transform-origin: 50% 0; box-shadow: 0 -10px 40px -10px rgba(0, 0, 0, 0.55);
+}
+.step:last-child { margin-bottom: 0; }
+.step:hover { transform: none; }
+.step .n { font-size: clamp(72px, 12vw, 120px); margin-bottom: 18px; }
+.step h3 { font-size: clamp(26px, 3.4vw, 40px); line-height: 1; margin-bottom: 10px; }
+.step p { font-size: 17px; max-width: 30ch; }
+.step .obj { position: absolute; right: -4%; bottom: -6%; width: min(52%, 280px); pointer-events: none; filter: drop-shadow(0 18px 18px rgba(0, 0, 0, 0.35)); transform: rotate(-8deg); }
+.step .obj.mini { position: absolute; width: min(56%, 300px); }
+.step .shade { position: absolute; inset: 0; border-radius: inherit; background: #000; opacity: var(--dim, 0); pointer-events: none; z-index: 2; }
+.stack.measuring .step { position: relative !important; top: auto !important; transform: none !important; }
+@media (min-width: 900px) {
+  .how-grid { grid-template-columns: 0.8fr 1.2fr; gap: 64px; align-items: start; }
+  .how-head { position: sticky; top: 120px; }
+  .step { top: calc(110px + var(--i) * 20px); padding: 40px 40px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step { position: relative; top: auto; margin-bottom: 18px; min-height: 0; }
+  .ghost img { animation: none; }
+}
