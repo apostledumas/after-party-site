@@ -46,6 +46,9 @@
   td:first-child { border-radius: 14px 0 0 14px; width: 44px; }
   td:last-child { border-radius: 0 14px 14px 0; }
   tr.sel td { background: #3a1d1c; }
+  tr.new td { box-shadow: inset 0 0 0 2px var(--butter); }
+  .live-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--red); margin-right: 6px; animation: blink 1.2s steps(2, start) infinite; }
+  @keyframes blink { to { visibility: hidden; } }
   input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--red); cursor: pointer; }
   .name { font-weight: 800; }
   .sub { color: var(--muted); font-size: 13px; }
@@ -79,7 +82,7 @@
 
 <section id="board" hidden>
   <header><div class="wrap bar">
-    <h1>Sign-ups <span class="marker">pick who comes on</span></h1>
+    <h1>Sign-ups <span class="marker">pick who comes on</span> <span class="sub" style="font-size:13px;font-weight:600"><span class="live-dot"></span>updates every 15s</span></h1>
     <div class="r">
       <label class="sub" for="show">Show</label>
       <select id="show"></select>
@@ -103,7 +106,7 @@
       <span class="count" id="selCount">0 selected</span>
       <button class="btn btn-ghost" id="pass-btn" type="button" disabled>Pass</button>
       <button class="btn btn-ghost" id="undo-btn" type="button" disabled>Back to waiting</button>
-      <button class="btn btn-red" id="invite-btn" type="button" disabled>Invite + send Zoom link</button>
+      <button class="btn btn-red" id="invite-btn" type="button" disabled>Pick + email Zoom link</button>
     </div>
     <p class="msg" id="boardMsg" aria-live="polite" style="color:var(--butter)"></p>
     <table>
@@ -120,7 +123,7 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = (iso, o) => new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", ...o }).format(new Date(iso));
 const showLabel = (iso) => fmt(iso, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) + " CT";
-let data = { rows: [], shows: [] }, picked = new Set(), firstLoad = true;
+let data = { rows: [], shows: [] }, picked = new Set(), firstLoad = true, seen = null, fresh = new Set(), busy = false;
 
 async function api(method, body, query = "") {
   const res = await fetch(API + query, { method, credentials: "same-origin", headers: body ? { "content-type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined });
@@ -150,14 +153,19 @@ async function load() {
     firstLoad = false;
   }
   $("#emailNote").hidden = !!data.email;
-  picked.clear(); render();
+  // keep Sherman's ticks across refreshes; drop only ids that left the list. New arrivals get a butter outline.
+  const ids = new Set(data.rows.map((r) => r.id));
+  picked.forEach((id) => { if (!ids.has(id)) picked.delete(id); });
+  if (seen) data.rows.forEach((r) => { if (!seen.has(r.id)) fresh.add(r.id); });
+  seen = ids;
+  render();
 }
 function visible() { const f = $("#filter").value; return data.rows.filter((r) => f === "all" || r.status === f); }
 function render() {
   const rows = visible();
   const c = (st) => data.rows.filter((r) => r.status === st).length;
   $("#stats").innerHTML = `<span class="stat"><b>${data.rows.length}</b> signed up</span><span class="stat"><b>${c("requested")}</b> waiting</span><span class="stat"><b>${c("invited")}</b> invited</span><span class="stat"><b>${data.rows.filter((r) => r.emailed_at).length}</b> emailed</span>`;
-  $("#rows").innerHTML = rows.map((r) => `<tr data-id="${r.id}" class="${picked.has(r.id) ? "sel" : ""}">
+  $("#rows").innerHTML = rows.map((r) => `<tr data-id="${r.id}" class="${picked.has(r.id) ? "sel" : ""} ${fresh.has(r.id) ? "new" : ""}">
     <td><input type="checkbox" aria-label="Select ${esc(r.name)}" ${picked.has(r.id) ? "checked" : ""}></td>
     <td><div class="name">${esc(r.name)}</div><div class="sub">${esc(r.email)} &middot; ${esc(r.phone)}</div><div class="sub">Signed up ${esc(fmt(r.created_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))}</div></td>
     <td class="sub">${esc(showLabel(r.show_at))}</td>
@@ -179,13 +187,13 @@ $("#rows").addEventListener("change", (e) => {
   tr.classList.toggle("sel", e.target.checked); sync();
 });
 $("#all").addEventListener("change", (e) => { visible().forEach((r) => (e.target.checked ? picked.add(r.id) : picked.delete(r.id))); render(); });
-$("#show").addEventListener("change", () => load().catch((x) => ($("#boardMsg").textContent = x.message)));
+$("#show").addEventListener("change", () => { picked.clear(); seen = null; fresh.clear(); load().catch((x) => ($("#boardMsg").textContent = x.message)); });
 $("#filter").addEventListener("change", () => { picked.clear(); render(); });
 $("#refresh").addEventListener("click", () => load().catch((x) => ($("#boardMsg").textContent = x.message)));
 
 async function act(body, confirmText) {
   if (confirmText && !confirm(confirmText)) return;
-  $("#boardMsg").textContent = "Working...";
+  busy = true; $("#boardMsg").textContent = "Working...";
   try {
     const out = await api("POST", { ...body, ids: [...picked] });
     $("#boardMsg").textContent = out.invited != null
@@ -193,8 +201,9 @@ async function act(body, confirmText) {
       : `${out.updated} updated.`;
     await load();
   } catch (x) { $("#boardMsg").textContent = x.message; }
+  busy = false;
 }
-$("#invite-btn").addEventListener("click", () => act({ action: "invite" }, `Invite ${picked.size} ${picked.size === 1 ? "person" : "people"} and email them the Zoom link?`));
+$("#invite-btn").addEventListener("click", () => act({ action: "invite" }, `Pick ${picked.size} ${picked.size === 1 ? "person" : "people"} and email the Zoom link now?`));
 $("#pass-btn").addEventListener("click", () => act({ action: "status", status: "declined" }));
 $("#undo-btn").addEventListener("click", () => act({ action: "status", status: "requested" }));
 
@@ -207,6 +216,9 @@ $("#csv").addEventListener("click", () => {
 
 // already logged in? (cookie still valid)
 load().catch(() => showLogin());
+
+// live night: requests keep coming in during the show. Refresh every 15s while the board is open and nothing is mid-send.
+setInterval(() => { if (!$("#board").hidden && !busy && !document.hidden) load().catch(() => {}); }, 15000);
 </script>
 </body>
 </html>

@@ -29,28 +29,30 @@ function session(req) {
 }
 const cookie = (value, maxAge) => `${COOKIE}=${value}; Path=/api/admin; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 
-/* email: plain, warm, no em dashes. Zoom link from env. */
+/* email: plain, warm, no em dashes. Zoom link from env.
+   Sent DURING the show, the moment Sherman picks someone (he may call their name on air), so it reads "you're up, join now",
+   not "see you later". Big button first: most people open it on a phone with the stream still playing. */
 function inviteEmail(row, zoom) {
-  const when = new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(row.show_at));
   const first = row.name.split(" ")[0];
-  const text = `Hey ${first},
+  const safe = first.replace(/[<>&"]/g, "");
+  const text = `${first}, you're up!
 
-You're invited to come on The After Party.
+Sherman just picked you to come on The After Party.
 
-When: ${when} Central
-Zoom: ${zoom}
+Join now: ${zoom}
 
-Join a few minutes early. You'll wait in the waiting room until we bring you in. Camera on, good light, somewhere you can hear.
+You'll land in the Zoom waiting room. Hang tight there and we'll bring you in. Camera on, good light, somewhere you can hear, and keep the YouTube stream muted so there's no echo.
 
-Can't wait to see you.
+See you in a minute.
 Sherman and The After Party team`;
-  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#121110">
-<p>Hey ${first.replace(/[<>&]/g, "")},</p>
-<p><b>You're invited to come on The After Party.</b></p>
-<p>When: ${when} Central<br>Zoom: <a href="${zoom}">${zoom}</a></p>
-<p>Join a few minutes early. You'll wait in the waiting room until we bring you in. Camera on, good light, somewhere you can hear.</p>
-<p>Can't wait to see you.<br>Sherman and The After Party team</p></div>`;
-  return { subject: "You're invited to The After Party", text, html };
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#121110;max-width:520px">
+<p style="font-size:26px;font-weight:800;line-height:1.15;margin:0 0 10px">${safe}, you're up!</p>
+<p style="margin:0 0 22px">Sherman just picked you to come on The After Party.</p>
+<p style="margin:0 0 22px"><a href="${zoom}" style="display:inline-block;background:#e5413d;color:#ffffff;font-weight:800;font-size:18px;text-decoration:none;padding:16px 28px;border-radius:999px">Join the Zoom now</a></p>
+<p style="margin:0 0 14px">You'll land in the waiting room. Hang tight there and we'll bring you in. Camera on, good light, somewhere you can hear, and keep the YouTube stream muted so there's no echo.</p>
+<p style="margin:0 0 22px;font-size:13px;color:#555">Button not working? Copy this link: ${zoom}</p>
+<p style="margin:0">See you in a minute.<br>Sherman and The After Party team</p></div>`;
+  return { subject: `${first}, you're up! Join The After Party now`, text, html };
 }
 
 async function sendInvites(rows) {
