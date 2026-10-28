@@ -447,3 +447,53 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 .scale-ends { display: flex; justify-content: space-between; font-size: 12px; opacity: .6; margin-top: 4px; }
 .check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; margin: 4px 0 16px; }
 .check input { width: 20px; height: 20px; accent-color: var(--red); flex: none; margin-top: 1px; }
+
+/* ======================= v2.4: mystery guests, bigger deck, bigger ghost ======================= */
+.mailcheck { background: var(--butter); color: var(--ink); padding: 12px 14px; border-radius: 14px; font-size: 15px; }
+.inline-link { color: var(--red); font-weight: 800; text-decoration: none; white-space: nowrap; border-bottom: 2px solid currentColor; }
+
+/* Special guests, no names yet (Sherman, Oct 28): six backlit silhouettes, one per half hour */
+.mystery { margin: 22px 0 26px; }
+.mystery-h { font-weight: 800; font-size: 20px; letter-spacing: -.02em; margin: 0 0 14px !important; }
+.mystery-h .script { color: var(--red); font-size: 1.25em; }
+.mystery-row { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; max-width: 620px; }
+.mystery-row li { display: grid; justify-items: center; gap: 6px; }
+.mystery-row .who { position: relative; width: 100%; aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: var(--red); box-shadow: 0 10px 18px -10px rgba(0,0,0,.5); }
+.mystery-row li:nth-child(3n+2) .who { background: var(--pink); }
+.mystery-row li:nth-child(3n) .who { background: var(--ink); }
+.mystery-row li:nth-child(odd) .who { transform: rotate(-4deg); }
+.mystery-row li:nth-child(even) .who { transform: rotate(3deg); }
+.mystery-row .who img { position: absolute; left: 8%; right: 8%; bottom: -4%; width: 84%; }
+.mystery-row li:nth-child(3n) .who img { filter: invert(.85); }   /* light silhouette on the dark chip */
+.mystery-row .who b { position: absolute; right: 8%; top: 4%; font-family: var(--num); font-weight: 400; font-size: clamp(18px, 2.6vw, 30px); color: var(--butter); text-shadow: 0 2px 0 rgba(0,0,0,.35); }
+.mystery-row .t { font-family: var(--num); font-size: 16px; letter-spacing: .02em; }
+
+/* the deck: bigger art, bigger words, less empty card (Sherman: "a lot of negative space") */
+.step { min-height: min(62svh, 560px); }
+.step .n { font-size: clamp(84px, 13vw, 150px); margin-bottom: 14px; }
+.step h3 { font-size: clamp(32px, 4.6vw, 58px); line-height: .98; margin-bottom: 12px; }
+.step p { font-size: clamp(18px, 1.8vw, 22px); max-width: 24ch; line-height: 1.45; }
+.step .obj { width: min(70%, 420px); right: -6%; bottom: -8%; }
+.step .obj.mini { width: min(74%, 440px); }
+@media (max-width: 899px) {
+  .step { min-height: min(68svh, 600px); }
+  .step .obj { width: 64%; right: -5%; bottom: -6%; }
+  .step .obj.mini { width: 66%; }
+}
+
+/* the ghost: big enough to hold its own on the poster */
+.ghost { width: min(100%, 560px); padding-bottom: 96px; }
+.ghost figcaption { font-size: clamp(28px, 3.2vw, 42px); }
+.ghost-arrow { width: 140px; }
+@media (min-width: 900px) { .poster-grid { grid-template-columns: 1.15fr 0.85fr; } }
+/* step art cropped to its ink (step-*.png) so it fills the card; the phone is tall, so it sizes by height */
+.step .obj { right: 4%; bottom: 6%; width: min(52%, 380px); transform: rotate(-6deg); }
+.step .obj-tall { width: auto; height: 74%; max-height: 420px; right: 6%; bottom: 7%; transform: rotate(8deg); }
+@media (max-width: 899px) { .step .obj { width: 56%; right: 4%; bottom: 5%; } .step .obj-tall { width: auto; height: 46%; } }
+/* desktop: words own the left 58%, art owns the bottom-right (the envelope covered "Check your email" at 1440) */
+@media (min-width: 900px) {
+  .step h3, .step p { max-width: 58%; }
+  .step .obj { width: 38%; right: 4%; bottom: 7%; }
+  .step .obj.mini { width: 42%; }
+  .step .obj-tall { width: auto; height: 66%; right: 7%; }
+}
