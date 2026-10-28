@@ -180,3 +180,25 @@ land as something we couldn't have known); a Holy Ghost on the Halloween poster;
 - Netlify project created: theafterparty-26cm (id 80759a8f-4932-4e16-8d0f-18dd1fe52550). MAIL_FROM set.
   Visitor access currently requires Netlify team login (default); turn off at launch.
 - Resend: theafterparty.tv verified, sending enabled, receiving disabled (replies to hello@ won't arrive).
+
+## v2.3 (Oct 28 2026): emails, testimonies, /prophecy, /testify
+Live-picking model (Sherman): people request before or during the show; Sherman picks live and may call names on air;
+the Zoom link arrives during the show. Copy, steps (Request, Watch live, Check your email, Get your word) updated.
+
+Emails (netlify/lib/email.mjs; table-based, inline styles, header image public/email/header.jpg rendered from og/email-header.html):
+| Email | When | From |
+|---|---|---|
+| You're on the list | instantly on a new request (not on a duplicate) | signup.mjs |
+| You're up | the moment Sherman picks someone in /admin | admin.mjs pick() |
+| Thank you + testimony link | noon CT the next day, scheduled in Resend (scheduled_at) at pick time; once per sign-up | admin.mjs pick() |
+| Live in an hour | scheduled function every 10 min; sends when the next show is 45 to 65 min away; once per person per show (email_log) | reminder.mjs, or /admin "Send reminder now" |
+Reminder + request emails carry a signed one-click unsubscribe (/api/unsubscribe); reminders skip unsubscribes.
+Every email: reply-to MAIL_REPLY_TO. Verified: all four render, no dashes, 4 to 6 KB of HTML.
+
+Database (Neon): testimonies (scores 1 to 10 optional, testimony optional, one of them required, ok_to_share, source page|email,
+signup_id link), email_log (kind, resend_id, status, unique reminder per show+email), unsubscribes.
+
+Pages: /prophecy (copy researched by a sub-agent from helpmefindmyway.com + NIV, every reference checked; current NIV
+Rev 19:10 wording), /testify (signed ?s=&t= link from the thank-you email skips name/email/phone).
+Built by og/build_pages.py from the home page's own header/footer. Admin: Testimonies tab (averages, list, CSV), Send reminder now.
+Syntax: every function and page script parsed in Chrome before deploy (no Node on this Mac).

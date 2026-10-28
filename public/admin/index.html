@@ -7,7 +7,7 @@
 <title>Admin | The After Party</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;700;800&family=Permanent+Marker&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;700;800&family=Permanent+Marker&family=Anton&display=swap" rel="stylesheet">
 <style>
   /* same tokens as the site (v2.css), trimmed for a working screen */
   :root { --ink: #121110; --ink-2: #1d1b19; --ink-3: #292624; --paper: #f6f2ea; --red: #e5413d; --pink: #ff9fcf; --butter: #ffe27a; --muted: rgba(246,242,234,.7); --line: rgba(246,242,234,.12); }
@@ -58,6 +58,17 @@
   .pill.invited { background: var(--butter); color: var(--ink); }
   .pill.declined { background: transparent; box-shadow: inset 0 0 0 1px var(--line); color: var(--muted); }
   .empty { padding: 60px 0; text-align: center; color: var(--muted); }
+  .tabs { display: flex; gap: 8px; margin: 18px 0 0; }
+  .tab { min-height: 40px; padding: 0 16px; border-radius: 999px; border: 2px solid var(--line); background: none; cursor: pointer; font-weight: 800; color: var(--muted); }
+  .tab.on { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+  .big { font-family: "Anton", "Inter Tight", sans-serif; font-size: 34px; color: var(--butter); line-height: 1; }
+  .tlist { display: grid; gap: 10px; }
+  .tcard { padding: 16px 18px; border-radius: 18px; background: var(--ink-2); }
+  .tcard .top { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; margin-bottom: 6px; }
+  .tcard .score { display: inline-block; padding: 3px 10px; border-radius: 999px; font-weight: 800; font-size: 13px; background: var(--ink-3); }
+  .tcard .score b { color: var(--butter); }
+  .tcard .text { white-space: pre-wrap; line-height: 1.55; margin-top: 6px; }
+  .tcard .share { color: var(--pink); font-size: 12px; font-weight: 800; }
   @media (max-width: 760px) {
     thead { display: none; }
     tr { display: grid; grid-template-columns: 44px 1fr; margin-bottom: 8px; }
@@ -92,6 +103,7 @@
         <option value="declined">Passed</option>
         <option value="all">Everyone</option>
       </select>
+      <button class="btn btn-ghost" id="remind" type="button" title="Emails everyone on the list. It also goes out on its own about an hour before each show.">Send reminder now</button>
       <button class="btn btn-ghost" id="csv" type="button">CSV</button>
       <button class="btn btn-ghost" id="refresh" type="button">Refresh</button>
       <button class="btn btn-ghost" id="logout" type="button">Log out</button>
@@ -99,6 +111,8 @@
   </div></header>
 
   <div class="wrap">
+    <nav class="tabs" aria-label="Views"><button type="button" class="tab on" data-tab="signups">Sign-ups</button><button type="button" class="tab" data-tab="testimonies">Testimonies</button></nav>
+    <div id="signupsView">
     <div class="stats" id="stats"></div>
     <p class="note" id="emailNote" hidden>Email isn't connected yet. "Invite" will mark people invited, but no Zoom link goes out until Resend is set up.</p>
     <div class="actionbar">
@@ -114,6 +128,13 @@
       <tbody id="rows"></tbody>
     </table>
     <p class="empty" id="empty" hidden>No one here yet.</p>
+    </div>
+    <div id="testView" hidden>
+      <div class="stats" id="tStats"></div>
+      <p class="sub" style="margin:0 0 14px">Thank-you emails go out at noon Central the day after someone is picked, asking for their scores and story. Anyone can also leave one at <a href="/testify" style="color:var(--butter)">/testify</a>.</p>
+      <div class="tlist" id="tList"></div>
+      <p class="empty" id="tEmpty" hidden>No testimonies yet.</p>
+    </div>
   </div>
 </section>
 
@@ -208,17 +229,48 @@ $("#pass-btn").addEventListener("click", () => act({ action: "status", status: "
 $("#undo-btn").addEventListener("click", () => act({ action: "status", status: "requested" }));
 
 $("#csv").addEventListener("click", () => {
+  if (tab === "testimonies") { const rows = window.__testimonies || [], q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`; const csv = ["name,email,phone,accuracy,impact,testimony,ok_to_share,source,date"].concat(rows.map((r) => [r.name, r.email, r.phone, r.accuracy, r.impact, r.testimony, r.ok_to_share, r.source, r.created_at].map(q).join(","))).join("\n"); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "after-party-testimonies.csv"; a.click(); return; }
   const rows = visible(), head = ["name", "email", "phone", "show", "status", "signed_up"];
   const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const csv = [head.join(",")].concat(rows.map((r) => [r.name, r.email, r.phone, showLabel(r.show_at), r.status, r.created_at].map(q).join(","))).join("\n");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "after-party-signups.csv"; a.click();
 });
 
+
+/* ---------- Testimonies tab ---------- */
+let tab = "signups";
+document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => {
+  tab = b.dataset.tab;
+  document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === b));
+  $("#signupsView").hidden = tab !== "signups"; $("#testView").hidden = tab !== "testimonies";
+  document.querySelector(".actionbar").hidden = tab !== "signups";
+  if (tab === "testimonies") loadTestimonies();
+}));
+async function loadTestimonies() {
+  const d = await api("GET", null, "?view=testimonies");
+  const st = d.stats || {};
+  $("#tStats").innerHTML = `<span class="stat">Accuracy <span class="big">${st.accuracy ?? "-"}</span>/10 <span class="sub">(${st.n_acc} ratings)</span></span>
+    <span class="stat">Impact <span class="big">${st.impact ?? "-"}</span>/10 <span class="sub">(${st.n_imp} ratings)</span></span>
+    <span class="stat"><b>${st.n_text}</b> testimonies</span><span class="stat"><b>${d.thanksPending}</b> thank-yous scheduled</span>`;
+  $("#tList").innerHTML = d.rows.map((r) => `<div class="tcard"><div class="top"><span class="name">${esc(r.name)}</span>
+    ${r.accuracy ? `<span class="score">Accuracy <b>${r.accuracy}</b></span>` : ""}${r.impact ? `<span class="score">Impact <b>${r.impact}</b></span>` : ""}
+    ${r.ok_to_share ? `<span class="share">OK TO SHARE</span>` : ""}<span class="sub">${esc(r.email)} &middot; ${esc(r.phone)} &middot; ${esc(fmt(r.created_at, { month: "short", day: "numeric", year: "numeric" }))} &middot; via ${r.source === "email" ? "thank-you email" : "/testify"}</span></div>
+    ${r.testimony ? `<div class="text">${esc(r.testimony)}</div>` : ""}</div>`).join("");
+  $("#tEmpty").hidden = d.rows.length > 0;
+  window.__testimonies = d.rows;
+}
+$("#remind").addEventListener("click", async () => {
+  if (!confirm("Email the 'live in an hour' reminder to everyone on the list now? (It also goes out on its own about an hour before each show, and nobody gets it twice.)")) return;
+  $("#boardMsg").textContent = "Sending reminders...";
+  try { const o = await api("POST", { action: "remind" }); $("#boardMsg").textContent = `Reminder sent to ${o.sent} ${o.sent === 1 ? "person" : "people"}${o.failed ? `, ${o.failed} failed` : ""}.`; }
+  catch (x) { $("#boardMsg").textContent = x.message; }
+});
+
 // already logged in? (cookie still valid)
 load().catch(() => showLogin());
 
 // live night: requests keep coming in during the show. Refresh every 15s while the board is open and nothing is mid-send.
-setInterval(() => { if (!$("#board").hidden && !busy && !document.hidden) load().catch(() => {}); }, 15000);
+setInterval(() => { if (!$("#board").hidden && !busy && !document.hidden && tab === "signups") load().catch(() => {}); }, 15000);
 </script>
 </body>
 </html>

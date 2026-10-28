@@ -3,6 +3,7 @@
 // No Instagram handle on purpose: people might think we looked at their page before calling on them.
 // No prayer need either: a word of knowledge has to land as something we had no way of knowing (Sherman, Oct 28).
 import { neon } from "@neondatabase/serverless";
+import { requestEmail, sendOne } from "../lib/email.mjs";
 
 const json = (status, body) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
@@ -47,10 +48,22 @@ export default async (req) => {
   try {
     const sql = neon(url.trim());
     // same email for the same show only counts once (unique index on lower(email), show_at)
-    await sql`
+    const rows = await sql`
       INSERT INTO public.signups (name, email, phone, show_at)
       VALUES (${name}, ${email}, ${phone}, ${showAt.toISOString()})
-      ON CONFLICT (lower(email), show_at) DO NOTHING`;
+      ON CONFLICT (lower(email), show_at) DO NOTHING
+      RETURNING id, name, email`;
+    // "You're on the list" goes out immediately, once per request (a duplicate request returns no row, so no second email).
+    // A failed email never fails the sign-up: the request is already saved.
+    if (rows[0]) {
+      try {
+        const id = await sendOne(email, requestEmail(rows[0], showAt.getTime()));
+        await sql`INSERT INTO public.email_log (kind, email, signup_id, show_at, resend_id) VALUES ('request', ${email}, ${rows[0].id}, ${showAt.toISOString()}, ${id})`;
+      } catch (e) {
+        console.error("request email", e.message);
+        await sql`INSERT INTO public.email_log (kind, email, signup_id, show_at, status) VALUES ('request', ${email}, ${rows[0].id}, ${showAt.toISOString()}, 'failed')`.catch(() => {});
+      }
+    }
     return json(200, { ok: true });
   } catch (e) {
     const code = (e && (e.code || e.name)) ? String(e.code || e.name).replace(/[^\w-]/g, "").slice(0, 24) : "unknown";

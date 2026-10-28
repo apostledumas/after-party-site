@@ -2,11 +2,15 @@
 //   POST {action:"login", passcode}        -> sets a signed, HttpOnly session cookie (12 hours)
 //   POST {action:"logout"}                 -> clears it
 //   GET  ?show=<ISO or "all">              -> sign-ups + the list of show dates
-//   POST {action:"invite", ids:[...]}      -> marks them invited; emails the Zoom link if Resend is set up
+//   GET  ?view=testimonies                 -> testimonies + average accuracy / impact
+//   POST {action:"invite", ids:[...]}      -> picks them: "you're up" email with the Zoom link now,
+//                                              and a thank-you + testimony request scheduled for noon CT the next day
 //   POST {action:"status", ids, status}    -> set requested / declined (undo, or pass on someone)
+//   POST {action:"remind"}                 -> send the "live in an hour" reminder now (it also runs on its own)
 // The passcode and the Zoom link only ever live in env vars, never in the page.
 import { neon } from "@neondatabase/serverless";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { pickEmail, thanksEmail, sendOne, sendReminders, nextShow, nextDayNoon } from "../lib/email.mjs";
 
 const COOKIE = "ap_admin";
 const TTL_S = 12 * 3600;
@@ -29,48 +33,30 @@ function session(req) {
 }
 const cookie = (value, maxAge) => `${COOKIE}=${value}; Path=/api/admin; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 
-/* email: plain, warm, no em dashes. Zoom link from env.
-   Sent DURING the show, the moment Sherman picks someone (he may call their name on air), so it reads "you're up, join now",
-   not "see you later". Big button first: most people open it on a phone with the stream still playing. */
-function inviteEmail(row, zoom) {
-  const first = row.name.split(" ")[0];
-  const safe = first.replace(/[<>&"]/g, "");
-  const text = `${first}, you're up!
-
-Sherman just picked you to come on The After Party.
-
-Join now: ${zoom}
-
-You'll land in the Zoom waiting room. Hang tight there and we'll bring you in. Camera on, good light, somewhere you can hear, and keep the YouTube stream muted so there's no echo.
-
-See you in a minute.
-Sherman and The After Party team`;
-  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#121110;max-width:520px">
-<p style="font-size:26px;font-weight:800;line-height:1.15;margin:0 0 10px">${safe}, you're up!</p>
-<p style="margin:0 0 22px">Sherman just picked you to come on The After Party.</p>
-<p style="margin:0 0 22px"><a href="${zoom}" style="display:inline-block;background:#e5413d;color:#ffffff;font-weight:800;font-size:18px;text-decoration:none;padding:16px 28px;border-radius:999px">Join the Zoom now</a></p>
-<p style="margin:0 0 14px">You'll land in the waiting room. Hang tight there and we'll bring you in. Camera on, good light, somewhere you can hear, and keep the YouTube stream muted so there's no echo.</p>
-<p style="margin:0 0 22px;font-size:13px;color:#555">Button not working? Copy this link: ${zoom}</p>
-<p style="margin:0">See you in a minute.<br>Sherman and The After Party team</p></div>`;
-  return { subject: `${first}, you're up! Join The After Party now`, text, html };
-}
-
-async function sendInvites(rows) {
-  const key = Netlify.env.get("RESEND_API_KEY"), from = Netlify.env.get("MAIL_FROM"), zoom = Netlify.env.get("ZOOM_LINK");
-  const replyTo = Netlify.env.get("MAIL_REPLY_TO");
-  if (!key || !from || !zoom) return { sent: [], skipped: "Email isn't connected yet (Resend key, sender or Zoom link missing). People were marked invited only." };
-  const sent = [], failed = [];
-  for (let i = 0; i < rows.length; i += 100) {                 // Resend batch limit: 100 per call
-    const chunk = rows.slice(i, i + 100);
-    const res = await fetch("https://api.resend.com/emails/batch", {
-      method: "POST",
-      headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-      // replies land in Sherman's inbox: theafterparty.tv has receiving off in Resend
-      body: JSON.stringify(chunk.map((r) => ({ from, to: [r.email], ...(replyTo ? { reply_to: replyTo } : {}), ...inviteEmail(r, zoom) }))),
-    });
-    if (res.ok) sent.push(...chunk.map((r) => r.id)); else { failed.push(...chunk.map((r) => r.id)); console.error("resend", res.status, await res.text()); }
+/* picking someone: the Zoom link now, the thank-you tomorrow at noon Central (Resend holds it; scheduled_at). */
+async function pick(sql, rows) {
+  const zoom = Netlify.env.get("ZOOM_LINK");
+  if (!zoom || !Netlify.env.get("RESEND_API_KEY") || !Netlify.env.get("MAIL_FROM"))
+    return { emailed: 0, failed: 0, note: "Email isn't connected yet (Resend key, sender or Zoom link missing). People were marked picked only." };
+  let emailed = 0, failed = 0;
+  const thanksAt = new Date(nextDayNoon()).toISOString();
+  for (const r of rows) {
+    try {
+      const id = await sendOne(r.email, pickEmail(r, zoom));
+      await sql`UPDATE public.signups SET emailed_at = now() WHERE id = ${r.id}`;
+      await sql`INSERT INTO public.email_log (kind, email, signup_id, show_at, resend_id) VALUES ('pick', ${r.email}, ${r.id}, ${r.show_at}, ${id})`;
+      emailed++;
+    } catch (e) { console.error("pick email", e.message); failed++; continue; }
+    // one thank-you per person per show, even if they get picked twice
+    const [dupe] = await sql`SELECT 1 FROM public.email_log WHERE kind = 'thanks' AND signup_id = ${r.id} LIMIT 1`;
+    if (dupe) continue;
+    try {
+      const tid = await sendOne(r.email, thanksEmail(r), thanksAt);
+      await sql`INSERT INTO public.email_log (kind, email, signup_id, show_at, resend_id, send_at, status) VALUES ('thanks', ${r.email}, ${r.id}, ${r.show_at}, ${tid}, ${thanksAt}, 'scheduled')`;
+    } catch (e) { console.error("thanks schedule", e.message); }
+    await new Promise((res) => setTimeout(res, 250));          // Resend allows a few requests a second
   }
-  return { sent, failed };
+  return { emailed, failed, note: null };
 }
 
 export default async (req) => {
@@ -78,12 +64,21 @@ export default async (req) => {
 
   if (req.method === "GET") {
     if (!session(req)) return json(401, { error: "Log in." });
-    const show = new URL(req.url).searchParams.get("show") || "all";
+    const q = new URL(req.url).searchParams;
+    if (q.get("view") === "testimonies") {
+      const [stats] = await sql`SELECT count(*)::int AS n, round(avg(accuracy), 1)::float AS accuracy, round(avg(impact), 1)::float AS impact,
+                                       count(accuracy)::int AS n_acc, count(impact)::int AS n_imp, count(testimony)::int AS n_text FROM public.testimonies`;
+      const rows = await sql`SELECT id, name, email, phone, accuracy, impact, testimony, source, ok_to_share, created_at FROM public.testimonies ORDER BY created_at DESC LIMIT 1000`;
+      const [mail] = await sql`SELECT count(*) FILTER (WHERE kind = 'thanks' AND status = 'scheduled' AND send_at > now())::int AS thanks_pending FROM public.email_log`;
+      return json(200, { stats, rows, thanksPending: mail.thanks_pending });
+    }
+    const show = q.get("show") || "all";
     const shows = await sql`SELECT show_at, count(*)::int AS n, count(*) FILTER (WHERE status = 'invited')::int AS invited FROM public.signups GROUP BY show_at ORDER BY show_at DESC`;
     const rows = show === "all"
       ? await sql`SELECT id, name, email, phone, show_at, status, invited_at, emailed_at, created_at FROM public.signups ORDER BY show_at DESC, created_at ASC LIMIT 2000`
       : await sql`SELECT id, name, email, phone, show_at, status, invited_at, emailed_at, created_at FROM public.signups WHERE show_at = ${show} ORDER BY created_at ASC`;
-    return json(200, { shows, rows, email: !!(Netlify.env.get("RESEND_API_KEY") && Netlify.env.get("MAIL_FROM") && Netlify.env.get("ZOOM_LINK")) });
+    const next = nextShow();
+    return json(200, { shows, rows, email: !!(Netlify.env.get("RESEND_API_KEY") && Netlify.env.get("MAIL_FROM") && Netlify.env.get("ZOOM_LINK")), next: new Date(next.start).toISOString() });
   }
 
   if (req.method !== "POST") return json(405, { error: "Nope." });
@@ -106,6 +101,10 @@ export default async (req) => {
   if (b.action === "logout") return json(200, { ok: true }, { "set-cookie": cookie("", 0) });
 
   if (!session(req)) return json(401, { error: "Log in." });
+  if (b.action === "remind") {
+    const out = await sendReminders(sql, nextShow());
+    return json(200, out);
+  }
   const ids = (Array.isArray(b.ids) ? b.ids : []).map(Number).filter(Number.isInteger).slice(0, 500);
   if (!ids.length) return json(400, { error: "Pick at least one person." });
 
@@ -113,9 +112,8 @@ export default async (req) => {
     const rows = await sql`UPDATE public.signups SET status = 'invited', invited_at = coalesce(invited_at, now())
                            WHERE id = ANY(${ids}) RETURNING id, name, email, show_at, emailed_at`;
     const toEmail = rows.filter((r) => !r.emailed_at);           // never email the same person twice
-    const out = await sendInvites(toEmail);
-    if (out.sent && out.sent.length) await sql`UPDATE public.signups SET emailed_at = now() WHERE id = ANY(${out.sent})`;
-    return json(200, { invited: rows.length, emailed: (out.sent || []).length, failed: (out.failed || []).length, note: out.skipped || null });
+    const out = await pick(sql, toEmail);
+    return json(200, { invited: rows.length, emailed: out.emailed, failed: out.failed, note: out.note });
   }
   if (b.action === "status" && ["requested", "declined"].includes(b.status)) {
     const rows = await sql`UPDATE public.signups SET status = ${b.status} WHERE id = ANY(${ids}) RETURNING id`;

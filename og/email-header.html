@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>email header 1200x420 (shown at 600x210)</title>
+<!-- Source for public/email/header.png. Rendered at 2x so it stays sharp on phones. Generic on purpose: every email uses it. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@800&family=Caveat+Brush&family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 420px; overflow: hidden; background: #121110; }
+  body { position: relative; font-family: "Inter Tight", Arial, sans-serif; color: #f6f2ea; isolation: isolate; border-radius: 0; }
+  body::before { content: ""; position: absolute; inset: 0; z-index: -1; background: url(../public/assets/v2/paper.jpg) 0 0 / 640px; opacity: .08; }
+  .abs { position: absolute; }
+  .logo { left: 70px; top: 70px; display: flex; align-items: center; gap: 18px; font-weight: 800; font-size: 46px; letter-spacing: -.03em; }
+  .logo b { width: 84px; height: 84px; border-radius: 50%; background: #e5413d; display: grid; place-items: center; font-size: 34px; color: #fff; transform: rotate(-8deg); }
+  .line { left: 74px; top: 196px; font-size: 70px; font-weight: 800; letter-spacing: -.04em; line-height: .95; }
+  .line span { font-family: "Caveat Brush", cursive; font-weight: 400; color: #ff9fcf; font-size: 96px; letter-spacing: 0; display: inline-block; transform: rotate(-5deg); }
+  .sticker { position: absolute; padding: 16px 28px 18px; font-family: "Permanent Marker", cursive; text-transform: uppercase; color: #121110; font-size: 30px; line-height: 1; isolation: isolate; filter: drop-shadow(0 8px 10px rgba(0,0,0,.45)); }
+  .sticker::before { content: ""; position: absolute; inset: 0; z-index: -1; background: url(../public/assets/v2/scrap-a.png) center / 100% 100% no-repeat, #ffe27a; background-blend-mode: multiply;
+    -webkit-mask: url(../public/assets/v2/scrap-a.png) center / 100% 100% no-repeat; mask: url(../public/assets/v2/scrap-a.png) center / 100% 100% no-repeat; }
+  .card { left: 770px; top: 70px; width: 360px; height: 300px; border-radius: 40px; background: #e5413d; transform: rotate(5deg); }
+  .card2 { left: 760px; top: 80px; width: 350px; height: 290px; border-radius: 40px; background: #ffe27a; transform: rotate(-6deg); }
+  .popper { left: 730px; top: 30px; width: 400px; transform: rotate(-6deg); filter: drop-shadow(0 18px 18px rgba(0,0,0,.45)); }
+  .crown { left: 1050px; top: 26px; width: 110px; fill: none; stroke: #ffe27a; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; transform: rotate(14deg); }
+  #c { position: absolute; inset: 0; }
+</style></head>
+<body>
+  <div class="abs logo"><b>AP</b>The After Party</div>
+  <div class="abs line">God still <span>speaks.</span></div>
+  <div class="abs card2"></div><div class="abs card"></div>
+  <img class="abs popper" src="../public/assets/v2/popper-fired.png" alt="">
+  <svg class="abs crown" viewBox="0 0 120 80"><path d="M10 64 L18 18 L42 46 L60 8 L78 46 L102 18 L110 64 Z"/><path d="M14 74 H106"/></svg>
+  <span class="sticker" style="left:78px;top:322px;transform:rotate(-3deg)">Live on YouTube &middot; Thursdays 8 PM CT</span>
+  <canvas id="c" width="1200" height="420"></canvas>
+<script>
+  let s = 11; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const C = ["#e5413d","#ff5a4e","#ff9fcf","#ffe27a","#f6f2ea"], x = document.getElementById("c").getContext("2d");
+  const keep = [[60,50,700,300],[60,310,760,400]];
+  for (let i = 0, n = 0; n < 110 && i < 3000; i++) {
+    const a = (-120 + r()*150) * Math.PI/180, d = 30 + Math.pow(r(), .7) * 430;
+    const px = 1010 + Math.cos(a)*d*1.1, py = 130 + Math.sin(a)*d*.6 + r()*40;
+    if (px < 10 || px > 1190 || py < 6 || py > 414 || keep.some(([l,t,R,b]) => px>l&&px<R&&py>t&&py<b)) continue;
+    const w = 10 + r()*12, h = 7 + r()*8;
+    x.save(); x.translate(px, py); x.rotate(r()*6.28); x.scale(1, .25 + r()*.75); x.fillStyle = C[(r()*5)|0]; x.fillRect(-w/2,-h/2,w,h); x.restore(); n++;
+  }
+</script></body></html>
