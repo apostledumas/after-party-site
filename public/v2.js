@@ -12,7 +12,7 @@ const COLORS = ["#e5413d", "#ff5a4e", "#ff9fcf", "#ffe27a", "#f6f2ea"];
 
 /* ── SHOW DATA · edit here ── */
 const CONFIG = {
-  youtube: "https://www.youtube.com/@doingitwiththedumases",   // UNVERIFIED handle: confirm before launch
+  youtube: "https://www.youtube.com/@doingitwiththedumases",   // verified Oct 28: "Doing It With The Dumases"
   featuredVideoId: "",                                          // paste a video ID to play inline
   specialStart: Date.UTC(2026, 9, 31, 23, 0),                   // Sat Oct 31, 6 PM CDT
   specialEnd: Date.UTC(2026, 10, 1, 2, 0),                      // Sat Oct 31, 9 PM CDT: countdown moves to Thursday

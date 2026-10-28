@@ -55,6 +55,7 @@ Sherman and The After Party team`;
 
 async function sendInvites(rows) {
   const key = Netlify.env.get("RESEND_API_KEY"), from = Netlify.env.get("MAIL_FROM"), zoom = Netlify.env.get("ZOOM_LINK");
+  const replyTo = Netlify.env.get("MAIL_REPLY_TO");
   if (!key || !from || !zoom) return { sent: [], skipped: "Email isn't connected yet (Resend key, sender or Zoom link missing). People were marked invited only." };
   const sent = [], failed = [];
   for (let i = 0; i < rows.length; i += 100) {                 // Resend batch limit: 100 per call
@@ -62,7 +63,8 @@ async function sendInvites(rows) {
     const res = await fetch("https://api.resend.com/emails/batch", {
       method: "POST",
       headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-      body: JSON.stringify(chunk.map((r) => ({ from, to: [r.email], ...inviteEmail(r, zoom) }))),
+      // replies land in Sherman's inbox: theafterparty.tv has receiving off in Resend
+      body: JSON.stringify(chunk.map((r) => ({ from, to: [r.email], ...(replyTo ? { reply_to: replyTo } : {}), ...inviteEmail(r, zoom) }))),
     });
     if (res.ok) sent.push(...chunk.map((r) => r.id)); else { failed.push(...chunk.map((r) => r.id)); console.error("resend", res.status, await res.text()); }
   }

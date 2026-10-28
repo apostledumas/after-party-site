@@ -5,7 +5,8 @@
 #   SESSION_SECRET   optional; if unset the cookie key is derived from DATABASE_URL + ADMIN_PASSCODE
 #   ZOOM_LINK        the Zoom link guests receive
 #   MAIL_FROM        e.g. "The After Party <party@yourdomain.com>" (a domain verified in Resend)
-#   RESEND_API_KEY   added later; until then "Invite" marks people invited without emailing
+#   RESEND_API_KEY   until set, "Invite" marks people invited without emailing
+#   MAIL_REPLY_TO    where replies to invites go (theafterparty.tv cannot receive mail)
 [build]
   publish = "public"
   functions = "netlify/functions"
