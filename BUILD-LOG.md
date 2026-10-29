@@ -215,3 +215,8 @@ Syntax: every function and page script parsed in Chrome before deploy (no Node o
 - Admin: login 500 in ~40ms on every try since 23:41 = the env check branch, so ADMIN_PASSCODE is not reaching the function
   (DATABASE_URL does: health check ok). Error now names the missing variable.
 - Request email for the 7:11 PM sign-up: Resend status delivered, from hello@theafterparty.tv (Sherman looked for info@).
+- Reminders (Sherman: "if they signed up for that week's show... I don't want them to forget"):
+  hour-before email is now personal for anyone who requested THIS show ("you asked for a word, we're live in an hour"),
+  generic for the rest of the list. New "soon" email ~20 min before (cron window 10 to 22 min, one retry run), only to
+  people who requested this show and weren't passed. DB: email_log kind check now allows 'soon'; unique index email_log_soon_once.
+  Queries tested read-only against Neon for Oct 31: 2 personal, 2 soon.

@@ -168,7 +168,8 @@ Sherman and The After Party team`,
 }
 
 /** 3. the hour-before reminder, to everyone on the list */
-export function reminderEmail(email, show) {
+export function reminderEmail(email, show, row) {
+  if (row) return reminderMineEmail(email, show, row);
   const title = show.special ? "Live Spiritual Readings starts in an hour." : "We go live in an hour.";
   return {
     subject: show.special ? "Live Spiritual Readings starts in an hour" : "The After Party is live in an hour",
@@ -194,6 +195,66 @@ Want a word? Request to come on at ${SITE}/#signup and watch live. If Sherman ca
 
 Sherman and The After Party team
 Stop show reminders: ${unsubUrl(email)}`,
+  };
+}
+
+
+/* 3b. the hour-before email for people who asked for a word for THIS show (Sherman: "I don't want them to forget") */
+function reminderMineEmail(email, show, row) {
+  const first = esc(firstName(row.name));
+  const at = fmtShow(show.start).replace(/^\w+, \w+ \d+, /, "");
+  return {
+    subject: `${firstName(row.name)}, you asked for a word. We're live in an hour`,
+    html: layout({
+      preheader: `Tonight at ${at}. Watch from the start and keep your email open.`,
+      kicker: sticker("Tonight", C.butter, -2),
+      title: `${first}, we're live in an hour.`,
+      intro: `You requested a word for tonight's show, ${esc(at)}. Sherman picks people live, so be there from the start. If he calls your name, your Zoom link lands in this inbox right then.`,
+      cards: [
+        card(C.red, "Be there from the start.", "Open YouTube a few minutes early. You can't be picked if you're not watching.", "#ffffff"),
+        card(C.butter, "Camera, lights, dressed.", "Camera on, face a lamp or a window, and wear what you'd want the internet to see."),
+        card(C.ink, "Have something to record with.", "A second phone or a notepad. Some words make sense later, and you'll want them word for word.", C.paper),
+      ],
+      cta: { label: "Set a reminder on YouTube", href: YT },
+      unsub: unsubUrl(email),
+    }),
+    text: `${firstName(row.name)}, we're live in an hour.
+
+You requested a word for tonight's show, ${at}. Sherman picks people live, so be there from the start. If he calls your name, your Zoom link lands in this inbox right then.
+
+- Open YouTube a few minutes early: ${YT}
+- Camera on, lights on, dressed.
+- Have something to record with.
+
+Sherman and The After Party team
+Stop show reminders: ${unsubUrl(email)}`,
+  };
+}
+
+/* 3c. about 20 minutes before, only to people who requested THIS show. Last nudge to get set up. */
+export function soonEmail(row, show, mins) {
+  const first = esc(firstName(row.name));
+  return {
+    subject: `${firstName(row.name)}, we go live in ${mins} minutes`,
+    html: layout({
+      preheader: "You asked for a word tonight. Time to get set up.",
+      kicker: sticker("Almost time", C.pink, -3),
+      title: `${first}, we go live in ${mins} minutes.`,
+      intro: `You asked for a word tonight. This is your heads up: get your spot ready, open YouTube, and keep this inbox open. If Sherman calls your name, your Zoom link shows up here.`,
+      cards: [
+        card(C.butter, "Quick setup", "Camera on. Face the light. Charger plugged in. Something to record with."),
+      ],
+      cta: { label: "Open the show on YouTube", href: YT },
+      unsub: unsubUrl(row.email),
+    }),
+    text: `${firstName(row.name)}, we go live in ${mins} minutes.
+
+You asked for a word tonight. Get your spot ready, open YouTube, and keep this inbox open. If Sherman calls your name, your Zoom link shows up here.
+
+Watch: ${YT}
+
+Sherman and The After Party team
+Stop show reminders: ${unsubUrl(row.email)}`,
   };
 }
 
@@ -256,18 +317,42 @@ export async function sendBatch(items) {
 }
 
 /** the hour-before reminder for `show`, to every requester who hasn't unsubscribed and hasn't had it yet. */
-export async function sendReminders(sql, show) {
+/** the ~20-minute heads up, only to people who requested this show. email_log kind 'soon' makes it once per person. */
+export async function sendSoon(sql, show, mins) {
   const showIso = new Date(show.start).toISOString();
   const people = await sql`
-    SELECT DISTINCT ON (lower(s.email)) lower(s.email) AS email
+    SELECT DISTINCT ON (lower(s.email)) s.id, s.name, lower(s.email) AS email
     FROM public.signups s
-    WHERE NOT EXISTS (SELECT 1 FROM public.unsubscribes u WHERE u.email = lower(s.email))
-      AND NOT EXISTS (SELECT 1 FROM public.email_log l WHERE l.kind = 'reminder' AND l.show_at = ${showIso} AND lower(l.email) = lower(s.email))`;
+    WHERE s.show_at = ${showIso} AND s.status <> 'declined'
+      AND NOT EXISTS (SELECT 1 FROM public.unsubscribes u WHERE u.email = lower(s.email))
+      AND NOT EXISTS (SELECT 1 FROM public.email_log l WHERE l.kind = 'soon' AND l.show_at = ${showIso} AND lower(l.email) = lower(s.email))
+    ORDER BY lower(s.email), s.id`;
   let sent = 0, failed = 0;
   for (let i = 0; i < people.length; i += 100) {
     const chunk = people.slice(i, i + 100);
     try {
-      const ids = await sendBatch(chunk.map((p) => ({ to: p.email, msg: reminderEmail(p.email, show) })));
+      const ids = await sendBatch(chunk.map((p) => ({ to: p.email, msg: soonEmail(p, show, mins) })));
+      for (let j = 0; j < chunk.length; j++) {
+        await sql`INSERT INTO public.email_log (kind, email, signup_id, show_at, resend_id) VALUES ('soon', ${chunk[j].email}, ${chunk[j].id}, ${showIso}, ${ids[j] || null}) ON CONFLICT DO NOTHING`;
+      }
+      sent += chunk.length;
+    } catch (e) { console.error("soon batch", e.message); failed += chunk.length; }
+  }
+  return { sent, failed, audience: people.length };
+}
+export async function sendReminders(sql, show) {
+  const showIso = new Date(show.start).toISOString();
+  const people = await sql`
+    SELECT DISTINCT ON (lower(s.email)) lower(s.email) AS email, s.name, (s.show_at = ${showIso}) AS mine
+    FROM public.signups s
+    WHERE NOT EXISTS (SELECT 1 FROM public.unsubscribes u WHERE u.email = lower(s.email))
+      AND NOT EXISTS (SELECT 1 FROM public.email_log l WHERE l.kind = 'reminder' AND l.show_at = ${showIso} AND lower(l.email) = lower(s.email))
+    ORDER BY lower(s.email), (s.show_at = ${showIso}) DESC`;   // requested this show wins, so they get the personal version
+  let sent = 0, failed = 0;
+  for (let i = 0; i < people.length; i += 100) {
+    const chunk = people.slice(i, i + 100);
+    try {
+      const ids = await sendBatch(chunk.map((p) => ({ to: p.email, msg: reminderEmail(p.email, show, p.mine ? p : null) })));
       for (let j = 0; j < chunk.length; j++) {
         await sql`INSERT INTO public.email_log (kind, email, show_at, resend_id) VALUES ('reminder', ${chunk[j].email}, ${showIso}, ${ids[j] || null}) ON CONFLICT DO NOTHING`;
       }
