@@ -86,7 +86,9 @@ export default async (req) => {
 
   if (b.action === "login") {
     const pass = Netlify.env.get("ADMIN_PASSCODE");
-    if (!pass || !Netlify.env.get("DATABASE_URL")) return json(500, { error: "ADMIN_PASSCODE and DATABASE_URL aren't set on Netlify yet." });
+    // name exactly what's missing: the old combined message hid which of the two never reached the function
+    const missing = [!pass && "ADMIN_PASSCODE", !Netlify.env.get("DATABASE_URL") && "DATABASE_URL"].filter(Boolean);
+    if (missing.length) return json(500, { error: `${missing.join(" and ")} ${missing.length > 1 ? "aren't" : "isn't"} reaching the site. In Netlify, check the scope includes Functions, then redeploy.` });
     await new Promise((r) => setTimeout(r, 400));              // slows passcode guessing
     // lockout: a 4-digit passcode is 10,000 guesses. 10 misses in 15 minutes closes the door for everyone
     // until the window passes, which turns minutes of guessing into months.

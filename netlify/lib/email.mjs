@@ -112,6 +112,7 @@ export function requestEmail(row, showAt) {
         card(C.butter, "Lights on, face the light.", "Sit facing a lamp or a window so we can see your face, not your silhouette."),
         card(C.pink, "Get dressed.", "You're on a live show. Wear what you'd want the whole internet to see you in."),
         card("#ffffff", "Watch from the start, keep your email open.", "Sherman might call your name on air. If he does, your Zoom link lands in your inbox right then (check spam and promotions too). Stay till the end. You never know when it's your turn."),
+        card(C.ink, "Have something to record with.", "If you get a word, you'll want it word for word. Keep a second phone or a notepad close. Some words make sense right away, some make sense months later. The full show stays on YouTube too.", C.paper),
       ],
       cta: { label: "Subscribe on YouTube", href: `${YT}?sub_confirmation=1` },
       outro: `Subscribing and tapping the bell is the best way to be there when we go live, even if you forget. We'll also send you a reminder an hour before the show.`,
@@ -128,6 +129,7 @@ Be ready:
 - Lights on, face the light.
 - Get dressed. It's a live show.
 - Watch from the start and keep your email open. If Sherman calls your name, your Zoom link arrives right then.
+- Have something to record with. Some words make sense later, and you'll want them word for word. The show stays on YouTube too.
 
 Subscribe on YouTube so you get the live alert: ${YT}?sub_confirmation=1
 
@@ -148,7 +150,7 @@ export function pickEmail(row, zoom) {
       intro: `Sherman just picked you to come on The After Party. Tap the button and you'll land in the waiting room. Hang tight there and we'll bring you in.`,
       cta: { label: "Join the Zoom now", href: zoom },
       cards: [
-        card(C.butter, "Before you join", "Camera on, lights on, somewhere you can hear. Mute the YouTube stream so there's no echo."),
+        card(C.butter, "Before you join", "Camera on, lights on, somewhere you can hear. Mute the YouTube stream so there's no echo. Have a way to record your word."),
       ],
       outro: `<span style="font-size:13px;color:${C.muted}">Button not working? Copy this link: ${esc(zoom)}</span>`,
     }),
@@ -158,7 +160,7 @@ Sherman just picked you to come on The After Party.
 
 Join now: ${zoom}
 
-You'll land in the waiting room. Camera on, lights on, somewhere you can hear, and mute the YouTube stream so there's no echo.
+You'll land in the waiting room. Camera on, lights on, somewhere you can hear, and mute the YouTube stream so there's no echo. Have a way to record your word.
 
 See you in a minute.
 Sherman and The After Party team`,

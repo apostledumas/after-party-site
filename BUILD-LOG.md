@@ -202,3 +202,16 @@ Pages: /prophecy (copy researched by a sub-agent from helpmefindmyway.com + NIV,
 Rev 19:10 wording), /testify (signed ?s=&t= link from the thank-you email skips name/email/phone).
 Built by og/build_pages.py from the home page's own header/footer. Admin: Testimonies tab (averages, list, CSV), Send reminder now.
 Syntax: every function and page script parsed in Chrome before deploy (no Node on this Mac).
+
+## v2.5 (Oct 28): /prophecy cut-outs, /testify "why it matters", admin diagnostics. NOT PUSHED (Sherman: hold pushes, Netlify credits)
+- 13 Fal cut-outs (nano-banana-2.1 B&W on grey, birefnet v2 Heavy / Portrait), cropped to ink with a Swift CoreGraphics tool
+  (alpha > 24, 1.5% pad), 600px objects / 720px people, 4.0 MB total, all lazy. Semi-alpha share 0.4 to 6.4% (bush highest: flames).
+- /prophecy: hero is a 1.2fr/.8fr grid, wordmark 196px max, "God still speaks." 78px max, mic + popper stage (popper fires on load, 220 pieces).
+  Floats use shape-outside on the PNG alpha. 11 numbered sections: added gifts of healing, miracles, deliverance + a <details> list of every gift;
+  three cards are now spirit / gift / office with refs; "Accurate isn't the same as from God." is 92px butter, red underline; new 08 Record your word, 09 God's word does what it says.
+  Checked 1440 and 375: no horizontal overflow (375 = 375), no broken images.
+- /testify: "Your story is a seed." section, four notes (John 4:39, Luke 17:15-16, Rev 12:11 + Heb 13:8, Mark 5:19), Psalm 107:2 quote.
+- Emails: request email gets an ink "Have something to record with." card; pick email adds "Have a way to record your word."
+- Admin: login 500 in ~40ms on every try since 23:41 = the env check branch, so ADMIN_PASSCODE is not reaching the function
+  (DATABASE_URL does: health check ok). Error now names the missing variable.
+- Request email for the 7:11 PM sign-up: Resend status delivered, from hello@theafterparty.tv (Sherman looked for info@).

@@ -497,3 +497,92 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
   .step .obj.mini { width: 42%; }
   .step .obj-tall { width: auto; height: 66%; right: 7%; }
 }
+
+/* ======================= v2.5 (Oct 28): /prophecy gets its pictures ======================= */
+/* Sherman: "I just wanted some of those cutouts... to make it flow a little bit bigger." Every section carries a
+   B&W cut-out on the right; the sticky title owns the left column on desktop, so the art lives in the body. */
+.pr-hgrid { display: grid; gap: 10px; }
+.pr-word { font-size: clamp(72px, 19vw, 132px); line-height: .84; letter-spacing: -.055em; margin: 6px 0 0; }
+.pr-word .script { display: block; font-size: 1.12em; margin: .02em 0 0 .25em; }
+.pr-stage { position: relative; height: clamp(250px, 62vw, 420px); margin-top: 6px; }
+.pr-mic { position: absolute; left: 8%; bottom: 0; height: 100%; width: auto; transform: rotate(-9deg); filter: grayscale(1) contrast(1.08) drop-shadow(0 22px 26px rgba(0,0,0,.55)); }
+.pr-stage .mini { position: absolute; left: 44%; top: 4%; width: 52%; transform: rotate(-14deg); }
+.pr-god { margin: 0 0 18px; font-weight: 800; letter-spacing: -.04em; line-height: .95; font-size: clamp(44px, 11vw, 78px); }
+.pr-god span { color: var(--butter); }
+.pr-right .lede { max-width: 40ch; margin-top: 14px; }
+@media (min-width: 900px) {
+  .pr-hgrid { grid-template-columns: 1.2fr .8fr; gap: 50px; align-items: center; }
+  .pr-word { font-size: clamp(120px, 12.5vw, 196px); }
+  .pr-stage { height: 400px; margin-top: -30px; }
+  .pr-stage .mini { left: 40%; width: 46%; }
+  .pr-right { padding-top: 60px; }
+  .pr-right .lede { font-size: 20px; }
+}
+
+/* the floats: text wraps the object's alpha (shape-outside), not its box */
+.pr-art { float: right; width: clamp(130px, 42%, 220px); height: auto; margin: -6px -4px 14px 16px; shape-image-threshold: .3; shape-margin: 12px;
+  transform: rotate(var(--r, 4deg)); filter: grayscale(1) contrast(1.06) drop-shadow(0 16px 18px rgba(0,0,0,.45)); }
+.pr-sec.alt .pr-art { filter: grayscale(1) contrast(1.06) drop-shadow(0 14px 16px rgba(18,17,16,.28)); }
+.pr-body .pq, .pr-body .pr-ref, .pr-trio, .pr-gifts, .pr-body .pr-big { clear: both; }
+@media (min-width: 900px) { .pr-art { width: clamp(220px, 24vw, 330px); margin: -30px -40px 18px 26px; } }
+
+/* 03: four rooms God spoke in */
+.pr-collage { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 18px; align-items: end; margin: 0 0 26px; }
+.pr-collage figure { margin: 0; text-align: center; }
+.pr-collage img { width: 100%; height: clamp(110px, 26vw, 200px); object-fit: contain; filter: grayscale(1) drop-shadow(0 14px 16px rgba(0,0,0,.5)); }
+.pr-collage figure:nth-child(1) img { transform: rotate(-3deg); }
+.pr-collage figure:nth-child(2) img { transform: rotate(4deg); }
+.pr-collage figure:nth-child(3) img { transform: rotate(2deg); }
+.pr-collage figure:nth-child(4) img { transform: rotate(-6deg); }
+.pr-collage figcaption { font-family: var(--script); font-size: 22px; color: var(--pink); margin-top: 4px; }
+.pr-collage-cap { grid-column: 1 / -1; margin: 6px 0 0 !important; font-weight: 800; font-size: clamp(24px, 3vw, 32px) !important; letter-spacing: -.03em; text-align: center; max-width: none !important; }
+
+/* 04: anyone can be a prophet */
+.pr-lineup { display: flex; justify-content: center; align-items: flex-end; margin: 0 0 30px; padding-bottom: 18px; }
+.pr-lineup figure { position: relative; margin: 0 -10px; }
+.pr-lineup img { height: clamp(200px, 50vw, 360px); width: auto; filter: grayscale(1) contrast(1.06) drop-shadow(0 14px 16px rgba(18,17,16,.3)); }
+.pr-lineup figure:nth-child(2) { z-index: 1; }
+.pr-lineup figcaption { position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%); white-space: nowrap; z-index: 2; }
+.pr-lineup .sticker { font-size: clamp(12px, 1.6vw, 16px); padding: 8px 14px 9px; }
+.pr-lineup figure:nth-child(1) .sticker { transform: rotate(-5deg); }
+.pr-lineup figure:nth-child(2) .sticker { transform: rotate(3deg); }
+.pr-lineup figure:nth-child(3) .sticker { transform: rotate(-2deg); }
+
+/* 02: every gift, behind a caret */
+.pr-gifts { margin: 24px 0 6px; border-radius: 22px; background: var(--ink); color: var(--paper); }
+.pr-gifts summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 20px 24px; font-weight: 800; font-size: 19px; letter-spacing: -.01em; }
+.pr-gifts summary::-webkit-details-marker { display: none; }
+.pr-gifts summary::after { content: ""; flex: none; width: 12px; height: 12px; margin-top: -6px; border-right: 3px solid var(--butter); border-bottom: 3px solid var(--butter); transform: rotate(45deg); transition: transform .25s; }
+.pr-gifts[open] summary::after { transform: rotate(-135deg); margin-top: 6px; }
+.pr-gifts .gl { display: grid; gap: 16px; padding: 0 24px 24px; }
+.pr-gifts h4 { margin: 0; font-family: var(--marker); font-weight: 400; text-transform: uppercase; color: var(--butter); font-size: 15px; letter-spacing: .02em; }
+.pr-gifts .gl p { margin: 4px 0 0; font-size: 16px; line-height: 1.55; color: var(--paper); }
+@media (min-width: 900px) { .pr-gifts .gl { grid-template-columns: 1fr 1fr; gap: 20px 30px; } }
+
+/* 05: spirit, gift, office */
+.pr-trio .kick { display: block; font-family: var(--script); font-size: 22px; line-height: 1; margin-bottom: 4px; color: var(--red); }
+.pr-trio .note:nth-child(1) .kick { color: var(--red); }
+.pr-trio .ref { display: block; margin-top: 14px; font-size: 13px; font-weight: 700; opacity: .7; }
+
+/* 06: the crystal ball gets a no sign, and the line gets huge */
+.pr-no { float: right; position: relative; width: clamp(130px, 40%, 220px); margin: -6px -4px 12px 16px; shape-outside: circle(50%); transform: rotate(-4deg); }
+.pr-no img { width: 100%; height: auto; filter: grayscale(1) drop-shadow(0 16px 18px rgba(0,0,0,.5)); }
+.pr-no svg { position: absolute; left: -8%; top: -4%; width: 116%; height: auto; fill: none; stroke: var(--red); stroke-width: 9; filter: drop-shadow(0 6px 10px rgba(0,0,0,.4)); }
+@media (min-width: 900px) { .pr-no { width: clamp(220px, 24vw, 320px); margin: -30px -30px 18px 30px; } }
+.pr-body .pr-big { margin: 30px 0 30px; max-width: none; font-weight: 800; letter-spacing: -.045em; line-height: 1.02; font-size: clamp(42px, 7vw, 92px);
+  color: var(--butter); text-decoration: underline; text-decoration-color: var(--red); text-decoration-thickness: .1em; text-underline-offset: .14em; text-decoration-skip-ink: none; }
+
+/* /testify: why your story matters */
+.tf-why .wrap { position: relative; }
+.tf-why .h { max-width: 12ch; }
+.tf-lede { color: rgba(18,17,16,.72); max-width: 46ch; margin-top: 16px; }
+.tf-notes .note h3 { font-size: 26px; }
+.tf-notes .ref { display: block; margin-top: 12px; font-size: 13px; font-weight: 700; opacity: .65; }
+.tf-mic { width: clamp(90px, 26vw, 200px); margin: 0 0 10px 14px; }
+@media (min-width: 900px) { .tf-mic { width: 220px; margin: -20px 40px 10px 30px; } }
+/* v2.5 review fixes: three across made 120px-wide columns of text; the no sign's slash overhangs its box */
+.pr-trio { grid-template-columns: 1fr !important; gap: 26px; }
+.pr-trio .note { padding-right: 34px; }
+.pr-no { shape-margin: 22px; margin-left: 30px; }
+@media (min-width: 900px) { .pr-no { margin-left: 56px; } .pr-stage .mini { left: 38%; top: 0; width: 60%; } }
+.tf-why .script { color: var(--red); }
