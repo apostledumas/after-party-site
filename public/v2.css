@@ -586,3 +586,10 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 .pr-no { shape-margin: 22px; margin-left: 30px; }
 @media (min-width: 900px) { .pr-no { margin-left: 56px; } .pr-stage .mini { left: 38%; top: 0; width: 60%; } }
 .tf-why .script { color: var(--red); }
+
+/* confirmed guests: real cut-out in the chip, name under it, no times on purpose: Sherman wants people there for the whole show (Oct 30). Inline width/left/top land every head the same size. */
+.mystery-row .n { font-weight: 800; font-size: 13px; line-height: 1.15; text-align: center; letter-spacing: -.01em; }
+.mystery-row li.set .who img.ph { right: auto; bottom: auto; max-width: none; height: auto; filter: grayscale(1) contrast(1.1); }
+/* minmax(0,1fr): long names were stretching their columns, so the chips came out different sizes */
+.mystery-row { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+@media (max-width: 600px) { .mystery-row { gap: 6px; } .mystery-row .n { font-size: 9.5px; letter-spacing: -.02em; } }
