@@ -66,7 +66,7 @@ const card = (bg, title, body, fg = C.ink) =>
 /**
  * Full branded email. body is trusted HTML built by the templates below (all user values escaped there).
  */
-function layout({ preheader, kicker, title, intro, cards = [], cta, cta2, outro, unsub }) {
+function layout({ preheader, kicker, title, intro, image, cards = [], cta, cta2, outro, unsub }) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800&family=Permanent+Marker&display=swap" rel="stylesheet"><title>${esc(title)}</title></head>
 <body style="margin:0;padding:0;background:${C.ink}">
@@ -78,6 +78,7 @@ function layout({ preheader, kicker, title, intro, cards = [], cta, cta2, outro,
     ${kicker ? `<div style="margin:0 0 14px">${kicker}</div>` : ""}
     <h1 style="margin:0 0 12px;font-family:${FONT};font-size:30px;line-height:1.1;font-weight:800;letter-spacing:-.02em;color:${C.ink}">${title}</h1>
     ${intro ? `<div style="font-size:16px;line-height:1.6;margin:0 0 20px">${intro}</div>` : ""}
+    ${image ? `<div style="margin:0 0 16px"><a href="${esc(image.href)}"><img src="${esc(image.src)}" width="544" alt="${esc(image.alt)}" style="display:block;width:100%;max-width:544px;height:auto;border:0;border-radius:18px"></a></div>` : ""}
     ${cards.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px">${cards.join("")}</table>` : ""}
     ${cta ? button(cta.label, cta.href, cta.bg, cta.fg) : ""}
     ${cta2 ? `<div style="margin:8px 0 0">${button(cta2.label, cta2.href, C.ink, "#ffffff")}</div>` : ""}
@@ -167,8 +168,62 @@ Sherman and The After Party team`,
   };
 }
 
+/* Show-specific hour-before emails. Keyed by show start (UTC ISO). When a show is listed here, its hour-before
+   email goes out as specialHourEmail: the topic, the banner, and "request to come on" (the Zoom link still only
+   goes to people Sherman picks). live = that night's YouTube watch link; falls back to the channel's /live page. */
+const SHOW_EMAILS = {
+  "2026-11-20T02:00:00.000Z": {
+    live: "",
+    banner: `${SITE}/email/apostle-banner.jpg`,
+    bannerAlt: "It's spelled APOSTLE. The After Party, live tonight at 8 PM Central on YouTube",
+    topic: "Tonight I'm answering your questions about apostles: are they still for today, female apostles, teams of apostles, apostolic authority, and the apostolic inheritance of every believer.",
+  },
+};
+
+function specialHourEmail(email, show, row, o) {
+  const first = row ? firstName(row.name) : "";
+  const title = first ? `${esc(first)}, we're an hour away.` : "We're an hour away.";
+  const live = /^https:\/\//.test(o.live || "") ? o.live : YT + "/live";
+  const ask = row
+    ? "You already requested a word for tonight. Watch from the start and keep your inbox open. If I call your name, your Zoom link lands right then."
+    : `After I finish teaching, I'm going to prophesy over people live. Want a word? Request to come on at <a href="${SITE}/#signup" style="color:#ffffff;font-weight:800">theafterparty.tv</a>. If I call your name, your Zoom link lands in your inbox.`;
+  return {
+    subject: "We're an hour away. You don't want to miss this one",
+    html: layout({
+      preheader: "Live at 8 PM Central. After I teach, I'm prophesying over people live.",
+      kicker: sticker("Tonight · 8 PM Central", C.butter, -2),
+      title,
+      intro: `The After Party goes live in an hour, and you don't want to miss this one. ${esc(o.topic)}`,
+      image: { src: o.banner, alt: o.bannerAlt, href: live },
+      cards: [
+        card(C.red, "Then I'm prophesying.", ask, "#ffffff"),
+        card(C.butter, "Coming on? Be ready.", "Camera on, face a lamp or a window, and be dressed for the internet. You'll be live on YouTube when you come on."),
+        card(C.ink, "Have something to record with.", "A second phone or a notepad. Some words make sense later, and you'll want them word for word.", C.paper),
+      ],
+      cta: { label: "Watch live on YouTube", href: live },
+      ...(row ? {} : { cta2: { label: "Request to come on", href: `${SITE}/#signup` } }),
+      outro: "Just want to watch? Join us on YouTube at 8 PM Central and bring your questions to the live chat.",
+      unsub: unsubUrl(email),
+    }),
+    text: `${first ? first + ", we're" : "We're"} an hour away.
+
+The After Party goes live at 8 PM Central, and you don't want to miss this one. ${o.topic}
+
+Watch live: ${live}
+
+After I finish teaching, I'm going to prophesy over people live. ${row ? "You already requested a word for tonight. If I call your name, your Zoom link lands in your inbox right then." : `Want a word? Request to come on at ${SITE}/#signup. If I call your name, your Zoom link lands in your inbox.`}
+
+Coming on? Camera on, good light, and something to record with.
+
+Sherman and The After Party team
+Stop show reminders: ${unsubUrl(email)}`,
+  };
+}
+
 /** 3. the hour-before reminder, to everyone on the list */
 export function reminderEmail(email, show, row) {
+  const special = SHOW_EMAILS[new Date(show.start).toISOString()];
+  if (special) return specialHourEmail(email, show, row, special);
   if (row) return reminderMineEmail(email, show, row);
   const title = show.special ? "Live Spiritual Readings starts in an hour." : "We go live in an hour.";
   return {
