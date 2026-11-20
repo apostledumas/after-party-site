@@ -173,7 +173,7 @@ Sherman and The After Party team`,
    goes to people Sherman picks). live = that night's YouTube watch link; falls back to the channel's /live page. */
 const SHOW_EMAILS = {
   "2026-11-20T02:00:00.000Z": {
-    live: "",
+    live: "https://www.youtube.com/live/MXBE4Ii3_z8",
     banner: `${SITE}/email/apostle-banner.jpg`,
     bannerAlt: "It's spelled APOSTLE. The After Party, live tonight at 8 PM Central on YouTube",
     topic: "Tonight I'm answering your questions about apostles: are they still for today, female apostles, teams of apostles, apostolic authority, and the apostolic inheritance of every believer.",
